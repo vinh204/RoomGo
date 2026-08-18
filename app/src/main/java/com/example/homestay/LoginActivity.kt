@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.homestay.ui.viewmodel.AuthViewModel
 import com.example.homestay.ui.viewmodel.AuthViewModelFactory
 import com.example.homestay.utils.SessionManager
+import com.example.homestay.utils.AdminAuth
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
@@ -77,8 +78,8 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (email.equals(ADMIN_EMAIL, ignoreCase = true)) {
-                if (password == ADMIN_PASSWORD) {
+            if (email.equals(AdminAuth.EMAIL, ignoreCase = true)) {
+                if (AdminAuth.authenticate(email, password)) {
                     saveAdminSession()
                     navigateToAdminDashboard()
                 } else {
@@ -138,7 +139,7 @@ class LoginActivity : AppCompatActivity() {
     private fun saveAdminSession() {
         getSharedPreferences("AdminSession", MODE_PRIVATE).edit()
             .putString("admin_id", "local-admin")
-            .putString("admin_username", ADMIN_EMAIL)
+            .putString("admin_username", AdminAuth.EMAIL)
             .putString("admin_fullname", "Administrator")
             .putString("admin_role", "super_admin")
             .putBoolean("is_admin_logged_in", true)
@@ -152,9 +153,5 @@ class LoginActivity : AppCompatActivity() {
         finish()
     }
 
-    companion object {
-        private const val ADMIN_EMAIL = "admin@gmail.com"
-        private const val ADMIN_PASSWORD = "Admin@123"
-    }
 }
 

@@ -5,6 +5,13 @@ import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.Lifecycle
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
@@ -21,6 +28,28 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
         
         setupViews()
+        observeDashboard()
+    }
+
+    private fun observeDashboard() {
+        val repository = (application as HomestayApplication).repository
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(
+                    repository.getAllRooms(),
+                    repository.getAllUsers(),
+                    repository.getAllBookings()
+                ) { rooms, users, bookings -> Triple(rooms, users, bookings) }
+                    .collect { (rooms, users, bookings) ->
+                        findViewById<TextView>(R.id.tv_stat_rooms).text = "${rooms.size}\nPhòng"
+                        findViewById<TextView>(R.id.tv_stat_users).text = "${users.size}\nNgười dùng"
+                        findViewById<TextView>(R.id.tv_stat_pending).text = "${bookings.count { it.status == "pending" }}\nChờ duyệt"
+                        val revenue = bookings.filter { it.status in setOf("confirmed", "completed") }.sumOf { it.totalPrice }
+                        val amount = NumberFormat.getNumberInstance(Locale("vi", "VN")).format(revenue.toLong())
+                        findViewById<TextView>(R.id.tv_stat_revenue).text = "Doanh thu dự kiến: $amount đ"
+                    }
+            }
+        }
     }
     
     private fun setupViews() {

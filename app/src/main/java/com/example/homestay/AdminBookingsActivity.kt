@@ -8,6 +8,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.core.widget.addTextChangedListener
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.chip.ChipGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.homestay.data.model.AdminBookingData
@@ -25,6 +28,7 @@ class AdminBookingsActivity : AppCompatActivity() {
     private lateinit var adapter: AdminBookingAdapter
     private lateinit var progressBar: ProgressBar
     private var bookings = mutableListOf<AdminBookingData>()
+    private var selectedStatus: String? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +58,17 @@ class AdminBookingsActivity : AppCompatActivity() {
         
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        findViewById<TextInputEditText>(R.id.et_admin_search).addTextChangedListener { applyBookingFilters() }
+        findViewById<ChipGroup>(R.id.chip_booking_status).setOnCheckedStateChangeListener { _, ids ->
+            selectedStatus = when (ids.firstOrNull()) {
+                R.id.chip_pending -> "pending"
+                R.id.chip_confirmed -> "confirmed"
+                R.id.chip_completed -> "completed"
+                R.id.chip_cancelled -> "cancelled"
+                else -> null
+            }
+            applyBookingFilters()
+        }
     }
     
     private fun loadBookings() {
@@ -78,7 +93,7 @@ class AdminBookingsActivity : AppCompatActivity() {
                 }
                 bookings.clear()
                 bookings.addAll(bookingsList)
-                adapter.updateBookings(bookingsList)
+                applyBookingFilters()
             } catch (e: Exception) {
                 android.util.Log.e("AdminBookings", "Error: ${e.message}", e)
                 Toast.makeText(this@AdminBookingsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -87,16 +102,35 @@ class AdminBookingsActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun applyBookingFilters() {
+        if (!::adapter.isInitialized) return
+        val query = findViewById<TextInputEditText>(R.id.et_admin_search).text?.toString().orEmpty().trim()
+        val filtered = bookings.filter { booking ->
+            val matchesText = query.isBlank() || booking.user?.fullName.orEmpty().contains(query, true) ||
+                booking.user?.email.orEmpty().contains(query, true) || booking.room?.name.orEmpty().contains(query, true)
+            matchesText && (selectedStatus == null || booking.status == selectedStatus)
+        }
+        adapter.updateBookings(filtered)
+        findViewById<View>(R.id.tv_empty).visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+    }
     
     private fun showChangeStatusDialog(booking: AdminBookingData) {
-        val statuses = arrayOf("pending", "confirmed", "cancelled", "completed")
-        val statusLabels = arrayOf("Chờ xác nhận", "Đã xác nhận", "Đã hủy", "Hoàn thành")
-        
-        val currentIndex = statuses.indexOf(booking.status.lowercase())
+        val transitions = when (booking.status.lowercase()) {
+            "pending" -> listOf("confirmed" to "Đã xác nhận", "cancelled" to "Đã hủy")
+            "confirmed" -> listOf("completed" to "Hoàn thành", "cancelled" to "Đã hủy")
+            else -> emptyList()
+        }
+        if (transitions.isEmpty()) {
+            Toast.makeText(this, "Booking này đã ở trạng thái cuối", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val statuses = transitions.map { it.first }.toTypedArray()
+        val statusLabels = transitions.map { it.second }.toTypedArray()
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Đổi trạng thái booking")
-            .setSingleChoiceItems(statusLabels, currentIndex) { dialog, which ->
+            .setSingleChoiceItems(statusLabels, -1) { dialog, which ->
                 val newStatus = statuses[which]
                 if (newStatus != booking.status) {
                     updateBookingStatus(booking.id, newStatus)

@@ -87,7 +87,11 @@ class AdminBookingAdapter(
             tvTotalPrice.text = formatPrice(booking.totalPrice)
             
             // Payment method
-            val paymentMethod = booking.paymentMethod ?: "Chưa thanh toán"
+            val paymentMethod = when (booking.paymentMethod) {
+                "pay_on_site" -> "Thanh toán khi nhận phòng"
+                "qr_code" -> "Thanh toán QR"
+                else -> "Chưa thanh toán"
+            }
             tvPaymentMethod.text = "💳 $paymentMethod"
             
             // Actions

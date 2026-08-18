@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.core.widget.addTextChangedListener
+import com.google.android.material.textfield.TextInputEditText
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.homestay.data.model.AdminUserData
@@ -53,6 +55,7 @@ class AdminUsersActivity : AppCompatActivity() {
         
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        findViewById<TextInputEditText>(R.id.et_admin_search).addTextChangedListener { filterUsers(it?.toString().orEmpty()) }
     }
     
     private fun loadUsers() {
@@ -64,7 +67,7 @@ class AdminUsersActivity : AppCompatActivity() {
                 }
                 users.clear()
                 users.addAll(usersList)
-                adapter.updateUsers(usersList)
+                filterUsers(findViewById<TextInputEditText>(R.id.et_admin_search).text?.toString().orEmpty())
             } catch (e: Exception) {
                 android.util.Log.e("AdminUsers", "Error: ${e.message}", e)
                 Toast.makeText(this@AdminUsersActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -72,6 +75,15 @@ class AdminUsersActivity : AppCompatActivity() {
                 progressBar.visibility = View.GONE
             }
         }
+    }
+
+    private fun filterUsers(query: String) {
+        val keyword = query.trim()
+        val filtered = users.filter {
+            it.fullName.contains(keyword, true) || it.email.contains(keyword, true) || it.phone.contains(keyword, true)
+        }
+        adapter.updateUsers(filtered)
+        findViewById<View>(R.id.tv_empty).visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
     }
     
     private fun showDeleteConfirmDialog(user: AdminUserData) {

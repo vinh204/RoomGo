@@ -46,6 +46,67 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tổng quan hôm nay"
+                android:textColor="@color/home_title"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tv_stat_rooms"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_weight="1"
+                    android:background="#E8F3FF"
+                    android:gravity="center"
+                    android:text="0\nPhòng"
+                    android:textColor="@color/home_primary"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_stat_users"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="#EAF7EF"
+                    android:gravity="center"
+                    android:text="0\nNgười dùng"
+                    android:textColor="#18794E"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_stat_pending"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="#FFF4E5"
+                    android:gravity="center"
+                    android:text="0\nChờ duyệt"
+                    android:textColor="#9A5B00"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_stat_revenue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="#F3F4F6"
+                android:padding="14dp"
+                android:text="Doanh thu dự kiến: 0 đ"
+                android:textColor="@color/home_title"
+                android:textStyle="bold" />
+
             <!-- Quản lý Phòng -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_manage_rooms"
@@ -53,7 +114,7 @@
                 android:layout_height="100dp"
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="@android:color/white"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="8dp"
                 app:cardElevation="4dp"
                 app:strokeColor="#CCCCCC"
                 app:strokeWidth="1dp"
@@ -72,7 +133,7 @@
                     <TextView
                         android:layout_width="60dp"
                         android:layout_height="60dp"
-                        android:text="🏠"
+                        android:text="P"
                         android:textSize="32sp"
                         android:gravity="center"
                         android:background="#E3F2FD"
@@ -117,7 +178,7 @@
                 android:layout_height="100dp"
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="@android:color/white"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="8dp"
                 app:cardElevation="4dp"
                 app:strokeColor="#CCCCCC"
                 app:strokeWidth="1dp"
@@ -136,7 +197,7 @@
                     <TextView
                         android:layout_width="60dp"
                         android:layout_height="60dp"
-                        android:text="👥"
+                        android:text="N"
                         android:textSize="32sp"
                         android:gravity="center"
                         android:background="#FFF3E0"
@@ -181,7 +242,7 @@
                 android:layout_height="100dp"
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="@android:color/white"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="8dp"
                 app:cardElevation="4dp"
                 app:strokeColor="#CCCCCC"
                 app:strokeWidth="1dp"
@@ -200,7 +261,7 @@
                     <TextView
                         android:layout_width="60dp"
                         android:layout_height="60dp"
-                        android:text="📅"
+                        android:text="Đ"
                         android:textSize="32sp"
                         android:gravity="center"
                         android:background="#F3E5F5"

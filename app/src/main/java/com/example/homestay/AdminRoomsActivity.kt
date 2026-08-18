@@ -9,6 +9,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.homestay.data.model.AdminRoomData
@@ -58,6 +59,7 @@ class AdminRoomsActivity : AppCompatActivity() {
         
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        findViewById<TextInputEditText>(R.id.et_admin_search).addTextChangedListener { filterRooms(it?.toString().orEmpty()) }
         
         fabAddRoom.setOnClickListener {
             showAddRoomDialog()
@@ -71,7 +73,7 @@ class AdminRoomsActivity : AppCompatActivity() {
                 val roomsList = repository.getAllRooms().first().map { it.toAdminData() }
                 rooms.clear()
                 rooms.addAll(roomsList)
-                adapter.updateRooms(roomsList)
+                filterRooms(findViewById<TextInputEditText>(R.id.et_admin_search).text?.toString().orEmpty())
             } catch (e: Exception) {
                 android.util.Log.e("AdminRooms", "Error: ${e.message}", e)
                 Toast.makeText(this@AdminRoomsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -117,6 +119,10 @@ class AdminRoomsActivity : AppCompatActivity() {
             val price = priceStr.toDoubleOrNull() ?: 0.0
             val capacity = capacityStr.toIntOrNull() ?: 1
             val maxSlots = maxSlotsStr.toIntOrNull() ?: 1
+            if (price <= 0 || capacity !in 1..20 || maxSlots !in 1..20) {
+                Toast.makeText(this, "Giá phải lớn hơn 0; sức chứa và số phòng phải từ 1 đến 20", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             
             createRoom(name, description, price, capacity, maxSlots, imageUrl, dialog)
         }
@@ -166,6 +172,10 @@ class AdminRoomsActivity : AppCompatActivity() {
             val price = priceStr.toDoubleOrNull() ?: 0.0
             val capacity = capacityStr.toIntOrNull() ?: 1
             val maxSlots = maxSlotsStr.toIntOrNull() ?: 1
+            if (price <= 0 || capacity !in 1..20 || maxSlots !in 1..20) {
+                Toast.makeText(this, "Giá phải lớn hơn 0; sức chứa và số phòng phải từ 1 đến 20", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             
             updateRoom(room.id, name, description, price, capacity, maxSlots, imageUrl, dialog)
         }
@@ -226,6 +236,12 @@ class AdminRoomsActivity : AppCompatActivity() {
                 Toast.makeText(this@AdminRoomsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun filterRooms(query: String) {
+        val filtered = rooms.filter { it.name.contains(query.trim(), ignoreCase = true) }
+        adapter.updateRooms(filtered)
+        findViewById<View>(R.id.tv_empty).visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun Room.toAdminData() = AdminRoomData(

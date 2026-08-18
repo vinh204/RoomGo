@@ -18,6 +18,31 @@
             android:background="@color/home_primary"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_admin_search"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_margin="8dp"
+            android:background="@android:color/white"
+            android:hint="Tìm khách hoặc phòng"
+            android:paddingHorizontal="16dp"
+            android:singleLine="true" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_booking_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="8dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip android:id="@+id/chip_all" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Tất cả" />
+            <com.google.android.material.chip.Chip android:id="@+id/chip_pending" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Chờ duyệt" />
+            <com.google.android.material.chip.Chip android:id="@+id/chip_confirmed" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Đã xác nhận" />
+            <com.google.android.material.chip.Chip android:id="@+id/chip_completed" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hoàn thành" />
+            <com.google.android.material.chip.Chip android:id="@+id/chip_cancelled" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Đã hủy" />
+        </com.google.android.material.chip.ChipGroup>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -32,6 +57,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tv_empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Chưa có booking phù hợp"
+        android:textColor="@color/home_subtitle"
         android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
