@@ -292,7 +292,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_featured_rooms"
             android:layout_width="match_parent"
-            android:layout_height="340dp"
+            android:layout_height="390dp"
             android:layout_marginTop="12dp"
             android:clipToPadding="false"
             android:orientation="horizontal" />
@@ -316,7 +316,7 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_recent_rooms"
                 android:layout_width="match_parent"
-                android:layout_height="340dp"
+                android:layout_height="390dp"
                 android:layout_marginTop="12dp"
                 android:clipToPadding="false"
                 android:orientation="horizontal" />

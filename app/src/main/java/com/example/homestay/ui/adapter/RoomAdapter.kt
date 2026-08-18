@@ -71,10 +71,18 @@ class RoomAdapter(
             tvPrice.text = "$formattedPrice đ / đêm"
             tvCapacity.text = "Tối đa ${room.maxGuests} khách · Còn phòng"
 
-            // Load image from URL using Coil
-            imgRoom.load(room.imageUrl) {
-                placeholder(R.drawable.app_logo) // Placeholder while loading
-                error(R.drawable.app_logo) // Error image if load fails
+            val fallbackImage = when {
+                room.name.contains("biển", ignoreCase = true) ||
+                    room.location.contains("Vũng Tàu", ignoreCase = true) -> R.drawable.room_beach
+                room.name.contains("studio", ignoreCase = true) ||
+                    room.location.contains("Đà Nẵng", ignoreCase = true) ||
+                    room.location.contains("Hà Nội", ignoreCase = true) -> R.drawable.room_studio
+                else -> R.drawable.room_dalat
+            }
+            val imageSource: Any = room.imageUrl.takeIf { it.isNotBlank() } ?: fallbackImage
+            imgRoom.load(imageSource) {
+                placeholder(fallbackImage)
+                error(fallbackImage)
                 crossfade(true) // Smooth transition
                 listener(
                     onStart = { 
