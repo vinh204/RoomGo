@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.homestay.R
-import com.example.homestay.data.api.models.AdminBookingData
+import com.example.homestay.data.model.AdminBookingData
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date

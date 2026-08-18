@@ -51,6 +51,14 @@ class LoginActivity : AppCompatActivity() {
         val etPassword = findViewById<TextInputEditText>(R.id.et_password)
         val btnLogin = findViewById<MaterialButton>(R.id.btn_login)
         val tvRegisterLink = findViewById<android.widget.TextView>(R.id.tv_register_link)
+        val btnAdminLogin = findViewById<MaterialButton>(R.id.btn_admin_login)
+        val btnContinueGuest = findViewById<MaterialButton>(R.id.btn_continue_guest)
+
+        btnContinueGuest.setOnClickListener { navigateToMain() }
+
+        btnAdminLogin.setOnClickListener {
+            startActivity(Intent(this, AdminLoginActivity::class.java))
+        }
 
         // Long press anywhere trên màn hình để mở Admin Login (hidden feature)
         val rootView = findViewById<android.view.View>(android.R.id.content)
@@ -102,8 +110,6 @@ class LoginActivity : AppCompatActivity() {
                         if (user != null && mongoUserId != null) {
                             // Lưu session (bao gồm MongoDB ID để gọi API update)
                             sessionManager.saveSession(user.id, mongoUserId, user.email, user.fullName)
-                            // Set userId cho ApiClient để interceptor tự động thêm vào header
-                            com.example.homestay.data.api.ApiClient.setCurrentUserId(mongoUserId)
                             
                             // Sync rooms từ backend sau khi đăng nhập
                             val application = applicationContext as com.example.homestay.HomestayApplication

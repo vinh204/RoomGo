@@ -3,7 +3,7 @@ package com.example.homestay.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.homestay.data.api.models.CreateBookingRequest
+import com.example.homestay.data.model.CreateBookingRequest
 import com.example.homestay.data.entity.Booking
 import com.example.homestay.data.entity.Favorite
 import com.example.homestay.data.entity.Room
@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class RoomViewModel(
     private val repository: HomestayRepository,
     private val bookingRepository: BookingRepository? = null

@@ -10,14 +10,15 @@ import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.homestay.data.api.ApiClient
-import com.example.homestay.data.api.models.AdminUserData
+import com.example.homestay.data.model.AdminUserData
 import com.example.homestay.ui.admin.AdminUserAdapter
 import com.example.homestay.utils.RateLimiter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class AdminUsersActivity : AppCompatActivity() {
+    private val repository by lazy { (application as HomestayApplication).repository }
     
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: AdminUserAdapter
@@ -58,20 +59,12 @@ class AdminUsersActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
-                val response = ApiClient.adminApiService.getUsers()
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val usersList = response.body()?.users ?: emptyList()
-                    // Log để debug
-                    usersList.forEach { user ->
-                        android.util.Log.d("AdminUsers", "User: ${user.email}, locked: ${user.locked}, failedAttempts: ${user.failedLoginAttempts}, lockedUntil: ${user.lockedUntil}")
-                    }
-                    users.clear()
-                    users.addAll(usersList)
-                    adapter.updateUsers(usersList)
-                    android.util.Log.d("AdminUsers", "Loaded ${usersList.size} users")
-                } else {
-                    Toast.makeText(this@AdminUsersActivity, "Không thể tải danh sách users", Toast.LENGTH_SHORT).show()
+                val usersList = repository.getAllUsers().first().map { user ->
+                    AdminUserData(user.id.toString(), user.email, user.phone, user.fullName, user.createdAt)
                 }
+                users.clear()
+                users.addAll(usersList)
+                adapter.updateUsers(usersList)
             } catch (e: Exception) {
                 android.util.Log.e("AdminUsers", "Error: ${e.message}", e)
                 Toast.makeText(this@AdminUsersActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -110,53 +103,24 @@ class AdminUsersActivity : AppCompatActivity() {
         
         progressBar.visibility = View.VISIBLE
         lifecycleScope.launch {
-            try {
-                val response = ApiClient.adminApiService.unlockUser(userId)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        // Reset frontend rate limiter cho email này
-                        if (userEmail != null) {
-                            RateLimiter.reset(this@AdminUsersActivity, userEmail)
-                            android.util.Log.d("AdminUsers", "Reset rate limiter for: $userEmail")
-                        }
-                        
-                        Toast.makeText(this@AdminUsersActivity, "Mở khóa tài khoản thành công!", Toast.LENGTH_SHORT).show()
-                        // Reload users để cập nhật trạng thái
-                        loadUsers()
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Mở khóa tài khoản thất bại"
-                        Toast.makeText(this@AdminUsersActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Mở khóa tài khoản thất bại"
-                    Toast.makeText(this@AdminUsersActivity, errorBody, Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@AdminUsersActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                progressBar.visibility = View.GONE
-            }
+            userEmail?.let { RateLimiter.reset(this@AdminUsersActivity, it) }
+            Toast.makeText(this@AdminUsersActivity, "Mở khóa tài khoản thành công!", Toast.LENGTH_SHORT).show()
+            progressBar.visibility = View.GONE
+            loadUsers()
         }
     }
 
     private fun deleteUser(userId: String) {
         lifecycleScope.launch {
             try {
-                val response = ApiClient.adminApiService.deleteUser(userId)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        Toast.makeText(this@AdminUsersActivity, "Xóa user thành công!", Toast.LENGTH_SHORT).show()
-                        adapter.removeUser(userId)
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Xóa user thất bại"
-                        Toast.makeText(this@AdminUsersActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Xóa user thất bại"
-                    Toast.makeText(this@AdminUsersActivity, errorBody, Toast.LENGTH_SHORT).show()
+                val user = repository.getUserById(userId.toLong()) ?: return@launch
+                if (repository.userHasBookings(user.id)) {
+                    Toast.makeText(this@AdminUsersActivity, "Không thể xóa người dùng đang có booking", Toast.LENGTH_LONG).show()
+                    return@launch
                 }
+                repository.deleteUser(user)
+                Toast.makeText(this@AdminUsersActivity, "Xóa user thành công!", Toast.LENGTH_SHORT).show()
+                adapter.removeUser(userId)
             } catch (e: Exception) {
                 Toast.makeText(this@AdminUsersActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }

@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.homestay.R
-import com.example.homestay.data.api.models.AdminRoomData
+import com.example.homestay.data.model.AdminRoomData
 import java.text.NumberFormat
 import java.util.Locale
 

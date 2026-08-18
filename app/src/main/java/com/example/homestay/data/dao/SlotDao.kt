@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SlotDao {
+    @Query("DELETE FROM slots WHERE roomId = :roomId")
+    suspend fun deleteByRoomId(roomId: Long)
     @Query("SELECT * FROM slots WHERE roomId = :roomId ORDER BY slotNumber ASC")
     fun getSlotsByRoomId(roomId: Long): Flow<List<Slot>>
 

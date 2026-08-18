@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Admin Dashboard"
+            android:text="Quản trị HomeViet"
             android:textSize="24sp"
             android:textStyle="bold"
             android:textColor="@android:color/white"/>
@@ -151,7 +151,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Xem Users"
+                            android:text="Người dùng"
                             android:textSize="18sp"
                             android:textStyle="bold"
                             android:textColor="#1A1A1A"/>
@@ -159,7 +159,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Danh sách người dùng"
+                            android:text="Xem và quản lý tài khoản"
                             android:textSize="14sp"
                             android:textColor="#666666"
                             android:layout_marginTop="4dp"/>
@@ -215,7 +215,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Quản lý Bookings"
+                            android:text="Quản lý đặt phòng"
                             android:textSize="18sp"
                             android:textStyle="bold"
                             android:textColor="#1A1A1A"/>

@@ -10,14 +10,16 @@ import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.homestay.data.api.ApiClient
-import com.example.homestay.data.api.models.AdminBookingData
-import com.example.homestay.data.api.models.UpdateBookingStatusRequest
+import com.example.homestay.data.model.AdminBookingData
+import com.example.homestay.data.model.AdminBookingRoom
+import com.example.homestay.data.model.AdminBookingUser
 import com.example.homestay.ui.admin.AdminBookingAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class AdminBookingsActivity : AppCompatActivity() {
+    private val repository by lazy { (application as HomestayApplication).repository }
     
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: AdminBookingAdapter
@@ -58,16 +60,25 @@ class AdminBookingsActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
-                val response = ApiClient.adminApiService.getBookings()
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val bookingsList = response.body()?.bookings ?: emptyList()
-                    bookings.clear()
-                    bookings.addAll(bookingsList)
-                    adapter.updateBookings(bookingsList)
-                    android.util.Log.d("AdminBookings", "Loaded ${bookingsList.size} bookings")
-                } else {
-                    Toast.makeText(this@AdminBookingsActivity, "Không thể tải danh sách bookings", Toast.LENGTH_SHORT).show()
+                val localBookings = repository.getAllBookings().first()
+                val localRooms = repository.getAllRooms().first().associateBy { it.id }
+                val localUsers = repository.getAllUsers().first().associateBy { it.id }
+                val bookingsList = localBookings.map { booking ->
+                    val user = localUsers[booking.userId]
+                    val room = localRooms[booking.roomId]
+                    AdminBookingData(
+                        id = booking.id.toString(),
+                        user = user?.let { AdminBookingUser(it.id.toString(), it.email, it.fullName, it.phone) },
+                        room = room?.let { AdminBookingRoom(it.id.toString(), it.name, it.price) },
+                        checkInDate = booking.checkInDate, checkOutDate = booking.checkOutDate,
+                        guestCount = booking.guestCount, totalPrice = booking.totalPrice,
+                        status = booking.status, paymentMethod = booking.paymentMethod,
+                        createdAt = booking.createdAt
+                    )
                 }
+                bookings.clear()
+                bookings.addAll(bookingsList)
+                adapter.updateBookings(bookingsList)
             } catch (e: Exception) {
                 android.util.Log.e("AdminBookings", "Error: ${e.message}", e)
                 Toast.makeText(this@AdminBookingsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -99,22 +110,10 @@ class AdminBookingsActivity : AppCompatActivity() {
     private fun updateBookingStatus(bookingId: String, newStatus: String) {
         lifecycleScope.launch {
             try {
-                val request = UpdateBookingStatusRequest(newStatus)
-                val response = ApiClient.adminApiService.updateBookingStatus(bookingId, request)
-                
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        Toast.makeText(this@AdminBookingsActivity, "Cập nhật trạng thái thành công!", Toast.LENGTH_SHORT).show()
-                        loadBookings() // Reload list
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Cập nhật thất bại"
-                        Toast.makeText(this@AdminBookingsActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Cập nhật thất bại"
-                    Toast.makeText(this@AdminBookingsActivity, errorBody, Toast.LENGTH_SHORT).show()
-                }
+                val booking = repository.getBookingById(bookingId.toLong()) ?: return@launch
+                repository.updateBooking(booking.copy(status = newStatus))
+                Toast.makeText(this@AdminBookingsActivity, "Cập nhật trạng thái thành công!", Toast.LENGTH_SHORT).show()
+                loadBookings()
             } catch (e: Exception) {
                 Toast.makeText(this@AdminBookingsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -135,20 +134,10 @@ class AdminBookingsActivity : AppCompatActivity() {
     private fun deleteBooking(bookingId: String) {
         lifecycleScope.launch {
             try {
-                val response = ApiClient.adminApiService.deleteBooking(bookingId)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        Toast.makeText(this@AdminBookingsActivity, "Xóa booking thành công!", Toast.LENGTH_SHORT).show()
-                        adapter.removeBooking(bookingId)
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Xóa booking thất bại"
-                        Toast.makeText(this@AdminBookingsActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Xóa booking thất bại"
-                    Toast.makeText(this@AdminBookingsActivity, errorBody, Toast.LENGTH_SHORT).show()
-                }
+                val booking = repository.getBookingById(bookingId.toLong()) ?: return@launch
+                repository.deleteBooking(booking)
+                Toast.makeText(this@AdminBookingsActivity, "Xóa booking thành công!", Toast.LENGTH_SHORT).show()
+                adapter.removeBooking(bookingId)
             } catch (e: Exception) {
                 Toast.makeText(this@AdminBookingsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }

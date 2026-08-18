@@ -11,16 +11,17 @@ import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.homestay.data.api.ApiClient
-import com.example.homestay.data.api.models.AdminRoomData
-import com.example.homestay.data.api.models.RoomRequest
+import com.example.homestay.data.model.AdminRoomData
+import com.example.homestay.data.entity.Room
 import com.example.homestay.ui.admin.AdminRoomAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class AdminRoomsActivity : AppCompatActivity() {
+    private val repository by lazy { (application as HomestayApplication).repository }
     
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: AdminRoomAdapter
@@ -67,16 +68,10 @@ class AdminRoomsActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
-                val response = ApiClient.adminApiService.getRooms()
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val roomsList = response.body()?.rooms ?: emptyList()
-                    rooms.clear()
-                    rooms.addAll(roomsList)
-                    adapter.updateRooms(roomsList)
-                    android.util.Log.d("AdminRooms", "Loaded ${roomsList.size} rooms")
-                } else {
-                    Toast.makeText(this@AdminRoomsActivity, "Không thể tải danh sách phòng", Toast.LENGTH_SHORT).show()
-                }
+                val roomsList = repository.getAllRooms().first().map { it.toAdminData() }
+                rooms.clear()
+                rooms.addAll(roomsList)
+                adapter.updateRooms(roomsList)
             } catch (e: Exception) {
                 android.util.Log.e("AdminRooms", "Error: ${e.message}", e)
                 Toast.makeText(this@AdminRoomsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -181,23 +176,10 @@ class AdminRoomsActivity : AppCompatActivity() {
     private fun createRoom(name: String, description: String, price: Double, capacity: Int, maxSlots: Int, imageUrl: String, dialog: AlertDialog) {
         lifecycleScope.launch {
             try {
-                val request = RoomRequest(name, description, price, capacity, imageUrl, maxSlots)
-                val response = ApiClient.adminApiService.createRoom(request)
-                
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        Toast.makeText(this@AdminRoomsActivity, "Thêm phòng thành công!", Toast.LENGTH_SHORT).show()
-                        dialog.dismiss()
-                        loadRooms() // Reload list
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Thêm phòng thất bại"
-                        Toast.makeText(this@AdminRoomsActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Thêm phòng thất bại"
-                    Toast.makeText(this@AdminRoomsActivity, errorBody, Toast.LENGTH_SHORT).show()
-                }
+                repository.insertRoom(Room(name = name, description = description, price = price, imageUrl = imageUrl, location = "", address = "", amenities = "WiFi", maxGuests = capacity, roomType = "Homestay", maxSlots = maxSlots))
+                Toast.makeText(this@AdminRoomsActivity, "Thêm phòng thành công!", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+                loadRooms()
             } catch (e: Exception) {
                 Toast.makeText(this@AdminRoomsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -207,23 +189,11 @@ class AdminRoomsActivity : AppCompatActivity() {
     private fun updateRoom(roomId: String, name: String, description: String, price: Double, capacity: Int, maxSlots: Int, imageUrl: String, dialog: AlertDialog) {
         lifecycleScope.launch {
             try {
-                val request = RoomRequest(name, description, price, capacity, imageUrl, maxSlots)
-                val response = ApiClient.adminApiService.updateRoom(roomId, request)
-                
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        Toast.makeText(this@AdminRoomsActivity, "Cập nhật phòng thành công!", Toast.LENGTH_SHORT).show()
-                        dialog.dismiss()
-                        loadRooms() // Reload list
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Cập nhật phòng thất bại"
-                        Toast.makeText(this@AdminRoomsActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Cập nhật phòng thất bại"
-                    Toast.makeText(this@AdminRoomsActivity, errorBody, Toast.LENGTH_SHORT).show()
-                }
+                val room = repository.getRoomById(roomId.toLong()) ?: return@launch
+                repository.updateRoom(room.copy(name = name, description = description, price = price, maxGuests = capacity, maxSlots = maxSlots, imageUrl = imageUrl))
+                Toast.makeText(this@AdminRoomsActivity, "Cập nhật phòng thành công!", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+                loadRooms()
             } catch (e: Exception) {
                 Toast.makeText(this@AdminRoomsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -244,25 +214,24 @@ class AdminRoomsActivity : AppCompatActivity() {
     private fun deleteRoom(roomId: String) {
         lifecycleScope.launch {
             try {
-                val response = ApiClient.adminApiService.deleteRoom(roomId)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.get("success") == true) {
-                        Toast.makeText(this@AdminRoomsActivity, "Xóa phòng thành công!", Toast.LENGTH_SHORT).show()
-                        adapter.removeRoom(roomId)
-                    } else {
-                        val errorMsg = body?.get("error")?.toString() ?: "Xóa phòng thất bại"
-                        Toast.makeText(this@AdminRoomsActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Xóa phòng thất bại"
-                    Toast.makeText(this@AdminRoomsActivity, errorBody, Toast.LENGTH_SHORT).show()
+                val room = repository.getRoomById(roomId.toLong()) ?: return@launch
+                if (repository.roomHasBookings(room.id)) {
+                    Toast.makeText(this@AdminRoomsActivity, "Không thể xóa phòng đang có booking", Toast.LENGTH_LONG).show()
+                    return@launch
                 }
+                repository.deleteRoom(room)
+                Toast.makeText(this@AdminRoomsActivity, "Xóa phòng thành công!", Toast.LENGTH_SHORT).show()
+                adapter.removeRoom(roomId)
             } catch (e: Exception) {
                 Toast.makeText(this@AdminRoomsActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+    private fun Room.toAdminData() = AdminRoomData(
+        id = id.toString(), name = name, description = description, price = price,
+        capacity = maxGuests, imageUrl = imageUrl, maxSlots = maxSlots, createdAt = 0L
+    )
     
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {

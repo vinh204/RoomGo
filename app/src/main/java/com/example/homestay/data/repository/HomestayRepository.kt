@@ -1,9 +1,6 @@
 package com.example.homestay.data.repository
 
 import android.util.Log
-import com.example.homestay.data.api.ApiClient
-import com.example.homestay.data.api.models.ApiRoom
-import com.example.homestay.data.api.models.toEntity
 import com.example.homestay.data.dao.BookingDao
 import com.example.homestay.data.dao.FavoriteDao
 import com.example.homestay.data.dao.RoomDao
@@ -35,7 +32,11 @@ class HomestayRepository(
     suspend fun insertRoom(room: Room): Long = roomDao.insertRoom(room)
     suspend fun insertRooms(rooms: List<Room>) = roomDao.insertRooms(rooms)
     suspend fun updateRoom(room: Room) = roomDao.updateRoom(room)
-    suspend fun deleteRoom(room: Room) = roomDao.deleteRoom(room)
+    suspend fun deleteRoom(room: Room) {
+        favoriteDao.deleteByRoomId(room.id)
+        slotDao.deleteByRoomId(room.id)
+        roomDao.deleteRoom(room)
+    }
 
     // Slot operations
     fun getSlotsByRoomId(roomId: Long): Flow<List<Slot>> = slotDao.getSlotsByRoomId(roomId)
@@ -104,7 +105,10 @@ class HomestayRepository(
             userDao.updateUser(user)
         }
     }
-    suspend fun deleteUser(user: User) = userDao.deleteUser(user)
+    suspend fun deleteUser(user: User) {
+        favoriteDao.deleteByUserId(user.id)
+        userDao.deleteUser(user)
+    }
     fun getAllUsers(): Flow<List<User>> = userDao.getAllUsers()
 
     // Favorite operations
@@ -146,116 +150,25 @@ class HomestayRepository(
         }
     }
     
-    /**
-     * Sync rooms từ backend API vào local DB
-     * Map rooms từ MongoDB vào local DB, update hoặc insert rooms
-     * Xóa các rooms không có trong API (để tránh duplicate)
-     */
     suspend fun syncRoomsFromAPI(): Boolean {
-        return try {
-            Log.d("HomestayRepository", "Syncing rooms from API...")
-            val response = ApiClient.apiService.getRooms()
-            
-            if (response.isSuccessful) {
-                val apiRooms = response.body() ?: emptyList()
-                Log.d("HomestayRepository", "Received ${apiRooms.size} rooms from API")
-                
-                // Lấy tất cả rooms hiện tại trong local DB
-                val localRooms = getAllRooms().first()
-                val apiRoomIds = apiRooms.map { it.id }.toSet()
-                
-                // Bước 1: Xóa tất cả rooms không có mongoId (old seed data)
-                val oldRoomsWithoutMongoId = localRooms.filter { it.mongoId == null }
-                if (oldRoomsWithoutMongoId.isNotEmpty()) {
-                    Log.d("HomestayRepository", "Deleting ${oldRoomsWithoutMongoId.size} old rooms without mongoId")
-                    for (room in oldRoomsWithoutMongoId) {
-                        deleteRoom(room)
-                    }
-                }
-                
-                // Bước 2: Xóa duplicate rooms - giữ lại room đầu tiên cho mỗi mongoId
-                val currentRooms = getAllRooms().first()
-                val roomsByMongoId = currentRooms.filter { it.mongoId != null }
-                    .groupBy { it.mongoId }
-                
-                // Xóa các rooms duplicate (giữ lại room đầu tiên)
-                var duplicateCount = 0
-                for ((mongoId, duplicateRooms) in roomsByMongoId) {
-                    if (duplicateRooms.size > 1) {
-                        // Giữ lại room đầu tiên, xóa các rooms còn lại
-                        val roomsToDelete = duplicateRooms.drop(1)
-                        duplicateCount += roomsToDelete.size
-                        for (room in roomsToDelete) {
-                            deleteRoom(room)
-                            Log.d("HomestayRepository", "Deleted duplicate room: ${room.id} with mongoId: $mongoId")
-                        }
-                    }
-                }
-                if (duplicateCount > 0) {
-                    Log.d("HomestayRepository", "Deleted $duplicateCount duplicate rooms")
-                }
-                
-                // Bước 3: Lấy lại danh sách rooms sau khi clean up
-                val cleanRooms = getAllRooms().first()
-                
-                // Bước 4: Sync rooms từ API
-                for (apiRoom in apiRooms) {
-                    // Tìm room trong local DB - chỉ tìm theo mongoId
-                    val existingRoom = cleanRooms.find { 
-                        it.mongoId == apiRoom.id
-                    }
-                    
-                    if (existingRoom != null) {
-                        // Update room đã có với data từ API (đầy đủ các fields)
-                        val updatedRoom = existingRoom.copy(
-                            mongoId = apiRoom.id,
-                            name = apiRoom.name,
-                            description = apiRoom.description,
-                            price = apiRoom.price,
-                            imageUrl = apiRoom.imageUrl,
-                            maxSlots = apiRoom.maxSlots,
-                            maxGuests = apiRoom.capacity,
-                            location = apiRoom.location,
-                            address = apiRoom.address,
-                            rating = apiRoom.rating.toFloat(),
-                            reviewCount = apiRoom.reviewCount,
-                            amenities = apiRoom.amenities,
-                            roomType = apiRoom.roomType,
-                            area = apiRoom.area
-                        )
-                        updateRoom(updatedRoom)
-                        Log.d("HomestayRepository", "Updated room: ${apiRoom.name} with mongoId: ${apiRoom.id}")
-                    } else {
-                        // Insert room mới nếu chưa có
-                        val newRoom = apiRoom.toEntity()
-                        val newId = insertRoom(newRoom)
-                        Log.d("HomestayRepository", "Inserted new room: ${apiRoom.name} with localId: $newId, mongoId: ${apiRoom.id}")
-                    }
-                }
-                
-                // Bước 5: Xóa các rooms có mongoId nhưng không có trong API (đã bị xóa trên backend)
-                val finalRooms = getAllRooms().first()
-                val roomsToDelete = finalRooms.filter { room ->
-                    room.mongoId != null && !apiRoomIds.contains(room.mongoId)
-                }
-                
-                if (roomsToDelete.isNotEmpty()) {
-                    Log.d("HomestayRepository", "Deleting ${roomsToDelete.size} rooms not in API anymore")
-                    for (room in roomsToDelete) {
-                        deleteRoom(room)
-                    }
-                }
-                
-                Log.d("HomestayRepository", "Rooms sync completed successfully. Total: ${apiRooms.size}")
-                true
-            } else {
-                Log.e("HomestayRepository", "Failed to sync rooms: ${response.code()}")
-                false
-            }
-        } catch (e: Exception) {
-            Log.e("HomestayRepository", "Error syncing rooms: ${e.message}", e)
-            false
-        }
+        return true
+    }
+
+    suspend fun roomHasBookings(roomId: Long) = bookingDao.countByRoomId(roomId) > 0
+    suspend fun userHasBookings(userId: Long) = bookingDao.countByUserId(userId) > 0
+
+    suspend fun seedLocalRoomsIfNeeded() {
+        if (getAllRooms().first().isNotEmpty()) return
+
+        insertRooms(
+            listOf(
+                Room(mongoId = "local-room-1", name = "Homestay Đà Lạt View", description = "Phòng ấm cúng, ban công nhìn ra đồi thông.", price = 650000.0, imageUrl = "android.resource://com.example.homestay/drawable/room_dalat", location = "Đà Lạt", address = "12 Trần Hưng Đạo, Đà Lạt", rating = 4.8f, reviewCount = 128, amenities = "WiFi, Bếp, Ban công", maxGuests = 2, roomType = "Phòng đôi", area = 28, maxSlots = 2),
+                Room(mongoId = "local-room-2", name = "Nhà Gỗ Bên Hồ", description = "Căn nhà gỗ yên tĩnh phù hợp cho gia đình.", price = 1200000.0, imageUrl = "android.resource://com.example.homestay/drawable/room_dalat", location = "Bảo Lộc", address = "Hồ Nam Phương, Bảo Lộc", rating = 4.7f, reviewCount = 86, amenities = "WiFi, Bếp, Bãi đỗ xe", maxGuests = 5, roomType = "Nhà nguyên căn", area = 65, maxSlots = 1),
+                Room(mongoId = "local-room-3", name = "Studio Trung Tâm", description = "Studio hiện đại, gần chợ và khu ăn uống.", price = 520000.0, imageUrl = "android.resource://com.example.homestay/drawable/room_studio", location = "Đà Nẵng", address = "45 Nguyễn Văn Linh, Đà Nẵng", rating = 4.6f, reviewCount = 74, amenities = "WiFi, Điều hòa, TV", maxGuests = 2, roomType = "Studio", area = 24, maxSlots = 3),
+                Room(mongoId = "local-room-4", name = "Villa Biển Xanh", description = "Villa rộng rãi gần biển, có hồ bơi riêng.", price = 2800000.0, imageUrl = "android.resource://com.example.homestay/drawable/room_beach", location = "Vũng Tàu", address = "18 Hạ Long, Vũng Tàu", rating = 4.9f, reviewCount = 203, amenities = "Hồ bơi, WiFi, BBQ", maxGuests = 10, roomType = "Villa", area = 180, maxSlots = 1),
+                Room(mongoId = "local-room-5", name = "Phòng Phố Cổ", description = "Không gian nhỏ gọn ngay trung tâm phố cổ.", price = 780000.0, imageUrl = "android.resource://com.example.homestay/drawable/room_studio", location = "Hà Nội", address = "26 Hàng Bạc, Hoàn Kiếm", rating = 4.5f, reviewCount = 156, amenities = "WiFi, Điều hòa, Máy sấy", maxGuests = 3, roomType = "Phòng gia đình", area = 32, maxSlots = 2)
+            )
+        )
     }
 }
 

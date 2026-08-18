@@ -26,5 +26,11 @@ interface FavoriteDao {
 
     @Query("SELECT COUNT(*) FROM favorites WHERE userId = :userId AND roomId = :roomId")
     suspend fun isFavorite(userId: Long, roomId: Long): Int
+
+    @Query("DELETE FROM favorites WHERE roomId = :roomId")
+    suspend fun deleteByRoomId(roomId: Long)
+
+    @Query("DELETE FROM favorites WHERE userId = :userId")
+    suspend fun deleteByUserId(userId: Long)
 }
 

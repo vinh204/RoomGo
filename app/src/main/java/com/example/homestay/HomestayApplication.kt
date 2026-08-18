@@ -5,6 +5,10 @@ import com.example.homestay.data.database.HomestayDatabase
 import com.example.homestay.data.repository.AuthRepository
 import com.example.homestay.data.repository.BookingRepository
 import com.example.homestay.data.repository.HomestayRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class HomestayApplication : Application() {
     val database by lazy { HomestayDatabase.getDatabase(this) }
@@ -36,8 +40,14 @@ class HomestayApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Rooms sẽ được sync từ backend API khi app khởi động (MainActivity)
-        // Không cần seed local database nữa vì dữ liệu đã có trong MongoDB
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            val demoPrefs = getSharedPreferences("DemoData", MODE_PRIVATE)
+            if (!demoPrefs.getBoolean("rooms_seeded", false)) {
+                repository.seedLocalRoomsIfNeeded()
+                demoPrefs.edit().putBoolean("rooms_seeded", true).apply()
+            }
+        }
+        // Seed once; subsequent launches keep the user's Room data unchanged.
     }
 }
 

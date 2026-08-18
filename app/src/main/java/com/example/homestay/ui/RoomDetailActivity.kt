@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import com.example.homestay.HomestayApplication
 import com.example.homestay.R
-import com.example.homestay.data.api.models.CreateBookingRequest
+import com.example.homestay.data.model.CreateBookingRequest
 import com.example.homestay.data.entity.Booking
 import com.example.homestay.data.entity.Room
 import com.example.homestay.ui.adapter.SlotAdapter
@@ -156,6 +156,7 @@ class RoomDetailActivity : AppCompatActivity() {
             val userId = sessionManager.getUserId()
             if (userId == -1L) {
                 Toast.makeText(this, "Vui lòng đăng nhập để đặt phòng", Toast.LENGTH_SHORT).show()
+                startActivity(android.content.Intent(this, com.example.homestay.LoginActivity::class.java))
                 return@setOnClickListener
             }
 
@@ -389,11 +390,10 @@ class RoomDetailActivity : AppCompatActivity() {
                     val pricePerDay = selectedSlot?.price?.takeIf { it > 0 } ?: room.price
                     val totalPrice = pricePerDay * days
 
-                    // Lấy mongoUserId và mongoRoomId
-                    val mongoUserId = sessionManager.getMongoUserId()
-                    val mongoRoomId = room.mongoId
+                    val localUserKey = sessionManager.getMongoUserId()
+                    val localRoomKey = room.id.toString()
                     
-                    if (mongoUserId == null) {
+                    if (localUserKey == null) {
                         runOnUiThread {
                             btnConfirm?.isEnabled = true
                             btnConfirm?.text = "Xác nhận đặt phòng"
@@ -406,41 +406,27 @@ class RoomDetailActivity : AppCompatActivity() {
                         return@launch
                     }
                     
-                    if (mongoRoomId == null) {
-                        runOnUiThread {
-                            btnConfirm?.isEnabled = true
-                            btnConfirm?.text = "Xác nhận đặt phòng"
-                            Toast.makeText(
-                                this@RoomDetailActivity,
-                                "Phòng chưa được đồng bộ với server. Vui lòng thử lại sau.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        return@launch
-                    }
-
                     runOnUiThread {
                         btnConfirm?.text = "Đang xử lý..."
                     }
 
-                    // Create booking via API (MongoDB)
                     val bookingRequest = CreateBookingRequest(
-                        roomId = mongoRoomId,
+                        roomId = localRoomKey,
                         checkInDate = checkInTimestamp!!,
                         checkOutDate = checkOutTimestamp!!,
                         guestCount = guestCount,
                         totalPrice = totalPrice,
                         status = "pending",
-                        paymentMethod = null, // Will be set after payment
-                        slotId = null // TODO: Map slotId to mongoSlotId if needed
+                        paymentMethod = null,
+                        slotId = selectedSlot?.id?.toString()
                     )
                     
-                    Log.d("RoomDetailActivity", "Creating booking via API: roomId=$mongoRoomId, userId=$mongoUserId, totalPrice=$totalPrice")
+                    Log.d("RoomDetailActivity", "Creating local booking: roomId=$localRoomKey, userId=$localUserKey, totalPrice=$totalPrice")
                     val result = viewModel.createBookingViaAPI(
-                        mongoUserId,
+                        localUserKey,
                         userId,
                         room.id,
-                        mongoRoomId,
+                        localRoomKey,
                         bookingRequest
                     )
                     

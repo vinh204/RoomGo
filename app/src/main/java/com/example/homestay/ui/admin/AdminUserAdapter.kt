@@ -7,7 +7,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.homestay.R
-import com.example.homestay.data.api.models.AdminUserData
+import com.example.homestay.data.model.AdminUserData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

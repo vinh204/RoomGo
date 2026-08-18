@@ -72,7 +72,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+
+            // Keep the navigation background flush with the screen bottom while
+            // placing its icons safely above the gesture/navigation area.
+            val baseHeight = (72 * resources.displayMetrics.density).toInt()
+            bottomNav.layoutParams = bottomNav.layoutParams.apply {
+                height = baseHeight + systemBars.bottom
+            }
+            bottomNav.setPadding(0, 0, 0, systemBars.bottom)
             insets
         }
 
@@ -286,12 +294,20 @@ class MainActivity : AppCompatActivity() {
                     syncRoomsFromBackend()
                 }
                 R.id.navigation_saved -> {
-                    loadContent(R.layout.content_saved)
-                    setupSavedContent()
+                    if (!sessionManager.isLoggedIn()) {
+                        openLogin("Vui lòng đăng nhập để xem phòng đã lưu")
+                    } else {
+                        loadContent(R.layout.content_saved)
+                        setupSavedContent()
+                    }
                 }
                 R.id.navigation_booking -> {
-                    loadContent(R.layout.content_bookings)
-                    setupBookingsContent()
+                    if (!sessionManager.isLoggedIn()) {
+                        openLogin("Vui lòng đăng nhập để xem đặt chỗ")
+                    } else {
+                        loadContent(R.layout.content_bookings)
+                        setupBookingsContent()
+                    }
                 }
                 R.id.navigation_profile -> {
                     loadContent(R.layout.content_account)
@@ -318,6 +334,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNav() {
+        bottomNav.isItemActiveIndicatorEnabled = false
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.navigation_search -> {
@@ -326,21 +343,35 @@ class MainActivity : AppCompatActivity() {
                     // Sync rooms khi chuyển sang tab search để đảm bảo đồng bộ với admin
                     // Sync ngay lập tức để user thấy thay đổi từ admin
                     syncRoomsFromBackendSilent()
+                    true
                 }
                 R.id.navigation_saved -> {
-                    loadContent(R.layout.content_saved)
-                    setupSavedContent()
+                    if (!sessionManager.isLoggedIn()) {
+                        openLogin("Vui lòng đăng nhập để xem phòng đã lưu")
+                        false
+                    } else {
+                        loadContent(R.layout.content_saved)
+                        setupSavedContent()
+                        true
+                    }
                 }
                 R.id.navigation_booking -> {
-                    loadContent(R.layout.content_bookings)
-                    setupBookingsContent()
+                    if (!sessionManager.isLoggedIn()) {
+                        openLogin("Vui lòng đăng nhập để xem đặt chỗ")
+                        false
+                    } else {
+                        loadContent(R.layout.content_bookings)
+                        setupBookingsContent()
+                        true
+                    }
                 }
                 R.id.navigation_profile -> {
                     loadContent(R.layout.content_account)
                     setupAccountContent()
+                    true
                 }
+                else -> false
             }
-            true
         }
     }
 
@@ -389,6 +420,8 @@ class MainActivity : AppCompatActivity() {
                     onFavoriteClick = { room, _ ->
                         if (userId != -1L) {
                             viewModel.toggleFavorite(userId, room.id)
+                        } else {
+                            openLogin("Vui lòng đăng nhập để lưu phòng yêu thích")
                         }
                     },
                     getFavoriteStatus = { roomId ->
@@ -535,6 +568,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupSavedContent() {
         val recyclerView = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_favorites)
+        val emptyView = contentContainer.findViewById<android.view.View>(R.id.tv_empty_favorites)
         recyclerView?.let { rv ->
             val userId = sessionManager.getUserId()
             
@@ -578,6 +612,8 @@ class MainActivity : AppCompatActivity() {
                     repeatOnLifecycle(Lifecycle.State.STARTED) {
                         viewModel.getFavoriteRooms(userId).collect { rooms ->
                             favoriteAdapter?.submitList(rooms)
+                            emptyView?.visibility = if (rooms.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                            rv.visibility = if (rooms.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
                         }
                     }
                 }
@@ -588,6 +624,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupBookingsContent() {
         val swipeRefresh = contentContainer.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh_bookings)
         val recyclerView = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_bookings)
+        val emptyView = contentContainer.findViewById<android.view.View>(R.id.tv_empty_bookings)
         
         // Setup SwipeRefreshLayout
         swipeRefresh?.setOnRefreshListener {
@@ -637,11 +674,15 @@ class MainActivity : AppCompatActivity() {
                             // Dùng API để load bookings
                             viewModel.getBookingsWithRoomInfoViaAPI(mongoUserId, userId).collect { bookings ->
                                 bookingAdapter?.submitList(bookings)
+                                emptyView?.visibility = if (bookings.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                                rv.visibility = if (bookings.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
                             }
                         } else {
                             // Fallback: dùng local bookings
                             viewModel.getBookingsWithRoomInfo(userId).collect { bookings ->
                                 bookingAdapter?.submitList(bookings)
+                                emptyView?.visibility = if (bookings.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                                rv.visibility = if (bookings.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
                             }
                         }
                     }
@@ -696,9 +737,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } else {
-            tvUserName?.text = "Người dùng"
-            tvUserEmail?.text = ""
+            tvUserName?.text = "Khách tham quan"
+            tvUserEmail?.text = "Đăng nhập để quản lý đặt phòng và yêu thích"
             tvUserPhone?.visibility = android.view.View.GONE
+            btnEditProfile?.visibility = android.view.View.GONE
+            btnLogout?.text = "Đăng nhập"
         }
 
         // Xử lý chỉnh sửa thông tin
@@ -712,12 +755,16 @@ class MainActivity : AppCompatActivity() {
 
         // Xử lý đăng xuất
         btnLogout?.setOnClickListener {
-            sessionManager.clearSession()
-            val intent = Intent(this, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
+            if (sessionManager.isLoggedIn()) {
+                sessionManager.clearSession()
+            }
+            openLogin(null)
         }
+    }
+
+    private fun openLogin(message: String?) {
+        message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+        startActivity(Intent(this, LoginActivity::class.java))
     }
 
     private fun showEditProfileDialog(userId: Long) {

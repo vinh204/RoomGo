@@ -18,6 +18,12 @@ interface BookingDao {
     @Query("SELECT * FROM bookings WHERE id = :bookingId")
     suspend fun getBookingById(bookingId: Long): Booking?
 
+    @Query("SELECT COUNT(*) FROM bookings WHERE roomId = :roomId")
+    suspend fun countByRoomId(roomId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM bookings WHERE userId = :userId")
+    suspend fun countByUserId(userId: Long): Int
+
     @Query("SELECT * FROM bookings WHERE mongoId = :mongoId")
     suspend fun getBookingByMongoId(mongoId: String): Booking?
 
