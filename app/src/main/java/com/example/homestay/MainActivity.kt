@@ -33,6 +33,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -54,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var roomAdapter: RoomAdapter? = null
     private var favoriteAdapter: RoomAdapter? = null
     private var bookingAdapter: BookingAdapter? = null
-    private var isObservingRooms = false
+    private var searchResultsJob: Job? = null
     private var isObservingFavorites = false
     private var isObservingBookings = false
     private var currentUserId: Long = -1L
@@ -281,7 +282,7 @@ class MainActivity : AppCompatActivity() {
             roomAdapter = null
             favoriteAdapter = null
             bookingAdapter = null
-            isObservingRooms = false
+            searchResultsJob?.cancel()
             isObservingFavorites = false
             isObservingBookings = false
             
@@ -388,6 +389,14 @@ class MainActivity : AppCompatActivity() {
     private fun setupSearchContent() {
         val swipeRefresh = contentContainer.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)
         val recyclerView = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_rooms)
+        val tvGreeting = contentContainer.findViewById<TextView>(R.id.tv_home_greeting)
+        val tvResultCount = contentContainer.findViewById<TextView>(R.id.tv_result_count)
+        val emptyView = contentContainer.findViewById<TextView>(R.id.tv_empty_rooms)
+
+        tvGreeting?.text = sessionManager.getUserName()
+            ?.takeIf { sessionManager.isLoggedIn() && it.isNotBlank() }
+            ?.let { "Xin chào, $it" }
+            ?: "Xin chào, Khách tham quan"
         
         // Setup SwipeRefreshLayout
         swipeRefresh?.setOnRefreshListener {
@@ -405,7 +414,7 @@ class MainActivity : AppCompatActivity() {
                 currentUserId = userId
                 favoriteStatusMap.clear()
                 roomAdapter = null
-                isObservingRooms = false
+                searchResultsJob?.cancel()
             }
             
             // Tạo adapter nếu chưa có hoặc đã reset
@@ -452,15 +461,15 @@ class MainActivity : AppCompatActivity() {
             // Setup search
             setupSearch()
 
-            // Chỉ observe một lần
-            if (!isObservingRooms) {
-                isObservingRooms = true
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.searchResults.collect { rooms ->
-                            Log.d("MainActivity", "Received ${rooms.size} rooms from database")
-                            roomAdapter?.submitList(rooms)
-                        }
+            searchResultsJob?.cancel()
+            searchResultsJob = lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.searchResults.collect { rooms ->
+                        Log.d("MainActivity", "Received ${rooms.size} rooms from database")
+                        roomAdapter?.submitList(rooms)
+                        tvResultCount?.text = "${rooms.size} phòng phù hợp"
+                        emptyView?.visibility = if (rooms.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                        rv.visibility = if (rooms.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
                     }
                 }
             }
@@ -474,6 +483,11 @@ class MainActivity : AppCompatActivity() {
         val layoutCheckIn = contentContainer.findViewById<LinearLayout>(R.id.layout_check_in)
         val layoutCheckOut = contentContainer.findViewById<LinearLayout>(R.id.layout_check_out)
         val btnSearch = contentContainer.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_search)
+        val btnGuestMinus = contentContainer.findViewById<MaterialButton>(R.id.btn_guest_minus)
+        val btnGuestPlus = contentContainer.findViewById<MaterialButton>(R.id.btn_guest_plus)
+        val tvGuestCount = contentContainer.findViewById<TextView>(R.id.tv_guest_count)
+        val btnSort = contentContainer.findViewById<MaterialButton>(R.id.btn_sort)
+        val btnClearFilters = contentContainer.findViewById<MaterialButton>(R.id.btn_clear_filters)
 
         // Setup search text watcher
         etSearch?.addTextChangedListener(object : TextWatcher {
@@ -483,6 +497,30 @@ class MainActivity : AppCompatActivity() {
                 viewModel.setSearchQuery(s?.toString() ?: "")
             }
         })
+
+        fun updateGuestCount(delta: Int) {
+            viewModel.setGuestCount(viewModel.guestCount.value + delta)
+        }
+        btnGuestMinus?.setOnClickListener { updateGuestCount(-1) }
+        btnGuestPlus?.setOnClickListener { updateGuestCount(1) }
+        btnSort?.setOnClickListener { viewModel.cycleSortOrder() }
+        btnClearFilters?.setOnClickListener {
+            viewModel.clearSearchFilters()
+            etSearch?.setText("")
+            tvCheckInDate?.text = "Chọn ngày"
+            tvCheckOutDate?.text = "Chọn ngày"
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.guestCount.collect { count -> tvGuestCount?.text = count.toString() }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.sortOrder.collect { sort -> btnSort?.text = sort.label }
+            }
+        }
 
         // Setup date pickers
         val calendar = Calendar.getInstance()
@@ -503,6 +541,9 @@ class MainActivity : AppCompatActivity() {
                     val timestamp = selectedDate.timeInMillis
                     viewModel.setCheckInDate(timestamp)
                     tvCheckInDate?.text = dateFormatDisplay.format(selectedDate.time)
+                    if (viewModel.checkOutDate.value?.let { it <= timestamp } == true) {
+                        tvCheckOutDate?.text = "Chọn ngày"
+                    }
                 },
                 year, month, day
             ).apply {
@@ -559,10 +600,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Search button (có thể dùng để trigger search hoặc chỉ để hiển thị)
         btnSearch?.setOnClickListener {
-            // Search đã được trigger tự động qua TextWatcher
-            // Có thể thêm logic filter theo date ở đây nếu cần
+            val checkIn = viewModel.checkInDate.value
+            val checkOut = viewModel.checkOutDate.value
+            if ((checkIn == null) != (checkOut == null)) {
+                Toast.makeText(this, "Vui lòng chọn đủ ngày nhận và trả phòng", Toast.LENGTH_SHORT).show()
+            } else {
+                viewModel.setSearchQuery(etSearch?.text?.toString().orEmpty())
+                contentContainer.findViewById<android.view.View>(R.id.tv_room_section_title)
+                    ?.requestFocus()
+            }
         }
     }
 

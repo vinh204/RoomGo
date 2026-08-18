@@ -23,9 +23,10 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/tv_home_greeting"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Đặt phòng dễ dàng hơn"
+            android:text="Xin chào, Khách tham quan"
             android:textColor="@color/home_title"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -34,7 +35,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Nhập thông tin để tìm khách sạn phù hợp ở HomeViet"
+            android:text="Bạn muốn nghỉ ở đâu?"
             android:textColor="@color/home_subtitle"
             android:textSize="14sp" />
 
@@ -44,8 +45,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:backgroundTint="@color/home_surface"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="6dp">
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -56,7 +57,7 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Tìm kiếm tên phòng"
+                    android:hint="Tên phòng, thành phố hoặc địa chỉ"
                     app:boxBackgroundMode="outline"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
@@ -177,6 +178,56 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@color/home_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Số khách"
+                        android:textColor="@color/home_text"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_guest_minus"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="Giảm số khách"
+                        android:text="−"
+                        android:textSize="22sp" />
+
+                    <TextView
+                        android:id="@+id/tv_guest_count"
+                        android:layout_width="40dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="1"
+                        android:textColor="@color/home_title"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_guest_plus"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="Tăng số khách"
+                        android:text="+"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_search"
                     android:layout_width="match_parent"
@@ -192,21 +243,61 @@
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
+            android:id="@+id/tv_room_section_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Khách sạn của HomeViet"
+            android:text="Phòng đang mở đặt"
             android:textColor="@color/home_title"
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Danh sách các khách sạn đang mở đặt phòng"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_result_count"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="0 phòng phù hợp"
+                android:textColor="@color/home_subtitle"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_sort"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:minWidth="0dp"
+                android:text="Đề xuất"
+                android:textAllCaps="false" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_clear_filters"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:minWidth="0dp"
+                android:text="Xóa lọc"
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_empty_rooms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="Không tìm thấy phòng phù hợp. Hãy thử đổi ngày hoặc bộ lọc."
             android:textColor="@color/home_subtitle"
-            android:textSize="14sp" />
+            android:textSize="15sp"
+            android:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_rooms"

@@ -40,12 +40,13 @@ class RoomAdapter(
         private val tvRoomType: TextView = itemView.findViewById(R.id.tv_room_type)
         private val tvAmenitiesTag: TextView = itemView.findViewById(R.id.tv_amenities_tag)
         private val tvPrice: TextView = itemView.findViewById(R.id.tv_price)
+        private val tvCapacity: TextView = itemView.findViewById(R.id.tv_capacity)
 
         fun bind(room: Room) {
             tvRoomName.text = room.name
             tvLocation.text = room.location
             // Format rating với 1 chữ số thập phân (5.0)
-            tvRating.text = String.format(Locale.getDefault(), "%.1f", room.rating)
+            tvRating.text = String.format(Locale.getDefault(), "%.1f (%d)", room.rating, room.reviewCount)
             
             // Room type - hiển thị nếu có
             if (room.roomType.isNotEmpty()) {
@@ -68,6 +69,7 @@ class RoomAdapter(
             val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
             val formattedPrice = formatter.format(room.price.toLong())
             tvPrice.text = "$formattedPrice đ / đêm"
+            tvCapacity.text = "Tối đa ${room.maxGuests} khách · Còn phòng"
 
             // Load image from URL using Coil
             imgRoom.load(room.imageUrl) {

@@ -38,11 +38,45 @@ class RoomViewModel(
     private val _checkOutDate = MutableStateFlow<Long?>(null)
     val checkOutDate: StateFlow<Long?> = _checkOutDate.asStateFlow()
 
-    val searchResults: Flow<List<Room>> = _searchQuery.flatMapLatest { query ->
-        if (query.isBlank()) {
-            repository.getAvailableRooms()
-        } else {
-            repository.searchRooms(query)
+    private val _guestCount = MutableStateFlow(1)
+    val guestCount: StateFlow<Int> = _guestCount.asStateFlow()
+
+    private val _sortOrder = MutableStateFlow(RoomSort.RECOMMENDED)
+    val sortOrder: StateFlow<RoomSort> = _sortOrder.asStateFlow()
+
+    private val dateRange = combine(_checkInDate, _checkOutDate) { checkIn, checkOut ->
+        checkIn to checkOut
+    }
+
+    val searchResults: Flow<List<Room>> = combine(
+        repository.getAvailableRooms(),
+        repository.getAllBookings(),
+        _searchQuery,
+        _guestCount,
+        combine(dateRange, _sortOrder) { dates, sort -> dates to sort }
+    ) { rooms, bookings, query, guests, options ->
+        val (dates, sort) = options
+        val (checkIn, checkOut) = dates
+        val keyword = query.trim()
+        val filtered = rooms.filter { room ->
+            val matchesKeyword = keyword.isBlank() ||
+                room.name.contains(keyword, ignoreCase = true) ||
+                room.location.contains(keyword, ignoreCase = true) ||
+                room.address.contains(keyword, ignoreCase = true)
+            val matchesCapacity = room.maxGuests >= guests
+            val hasAvailability = if (checkIn != null && checkOut != null) {
+                bookings.count { booking ->
+                    booking.roomId == room.id &&
+                        booking.status in setOf("confirmed", "pending") &&
+                        booking.checkInDate < checkOut && booking.checkOutDate > checkIn
+                } < room.maxSlots
+            } else true
+            matchesKeyword && matchesCapacity && hasAvailability
+        }
+        when (sort) {
+            RoomSort.RECOMMENDED -> filtered.sortedByDescending { it.rating }
+            RoomSort.PRICE_LOW -> filtered.sortedBy { it.price }
+            RoomSort.PRICE_HIGH -> filtered.sortedByDescending { it.price }
         }
     }
 
@@ -89,10 +123,33 @@ class RoomViewModel(
 
     fun setCheckInDate(timestamp: Long) {
         _checkInDate.value = timestamp
+        if (_checkOutDate.value?.let { it <= timestamp } == true) {
+            _checkOutDate.value = null
+        }
     }
 
     fun setCheckOutDate(timestamp: Long) {
         _checkOutDate.value = timestamp
+    }
+
+    fun setGuestCount(count: Int) {
+        _guestCount.value = count.coerceIn(1, 10)
+    }
+
+    fun cycleSortOrder() {
+        _sortOrder.value = when (_sortOrder.value) {
+            RoomSort.RECOMMENDED -> RoomSort.PRICE_LOW
+            RoomSort.PRICE_LOW -> RoomSort.PRICE_HIGH
+            RoomSort.PRICE_HIGH -> RoomSort.RECOMMENDED
+        }
+    }
+
+    fun clearSearchFilters() {
+        _searchQuery.value = ""
+        _checkInDate.value = null
+        _checkOutDate.value = null
+        _guestCount.value = 1
+        _sortOrder.value = RoomSort.RECOMMENDED
     }
 
     // Favorite operations
@@ -228,6 +285,12 @@ class RoomViewModel(
         val overlappingCount = repository.countOverlappingBookings(roomId, checkInDate, checkOutDate)
         return (room.maxSlots - overlappingCount).coerceAtLeast(0)
     }
+}
+
+enum class RoomSort(val label: String) {
+    RECOMMENDED("Đề xuất"),
+    PRICE_LOW("Giá thấp nhất"),
+    PRICE_HIGH("Giá cao nhất")
 }
 
 class RoomViewModelFactory(
