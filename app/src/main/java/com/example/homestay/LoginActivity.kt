@@ -110,7 +110,7 @@ class LoginActivity : AppCompatActivity() {
                             val application = applicationContext as com.example.homestay.HomestayApplication
                             lifecycleScope.launch {
                                 try {
-                                    application.repository.syncRoomsFromAPI()
+                                    application.repository.refreshLocalRooms()
                                     android.util.Log.d("LoginActivity", "Rooms synced after login")
                                 } catch (e: Exception) {
                                     android.util.Log.e("LoginActivity", "Error syncing rooms: ${e.message}", e)

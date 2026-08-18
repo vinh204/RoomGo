@@ -44,26 +44,43 @@ class RoomViewModel(
     private val _sortOrder = MutableStateFlow(RoomSort.RECOMMENDED)
     val sortOrder: StateFlow<RoomSort> = _sortOrder.asStateFlow()
 
+    private val _maxPrice = MutableStateFlow(3_000_000.0)
+    val maxPrice: StateFlow<Double> = _maxPrice.asStateFlow()
+
+    private val _roomType = MutableStateFlow("Tất cả")
+    val roomType: StateFlow<String> = _roomType.asStateFlow()
+
     private val dateRange = combine(_checkInDate, _checkOutDate) { checkIn, checkOut ->
         checkIn to checkOut
+    }
+
+    private val searchFilters = combine(
+        _searchQuery, _guestCount, _maxPrice, _roomType
+    ) { query, guests, maxPrice, roomType ->
+        SearchFilters(query, guests, maxPrice, roomType)
     }
 
     val searchResults: Flow<List<Room>> = combine(
         repository.getAvailableRooms(),
         repository.getAllBookings(),
-        _searchQuery,
-        _guestCount,
+        searchFilters,
         combine(dateRange, _sortOrder) { dates, sort -> dates to sort }
-    ) { rooms, bookings, query, guests, options ->
+    ) { rooms, bookings, filters, options ->
         val (dates, sort) = options
         val (checkIn, checkOut) = dates
-        val keyword = query.trim()
+        val keyword = filters.query.trim()
         val filtered = rooms.filter { room ->
             val matchesKeyword = keyword.isBlank() ||
                 room.name.contains(keyword, ignoreCase = true) ||
                 room.location.contains(keyword, ignoreCase = true) ||
                 room.address.contains(keyword, ignoreCase = true)
-            val matchesCapacity = room.maxGuests >= guests
+            val matchesCapacity = room.maxGuests >= filters.guests
+            val matchesPrice = room.price <= filters.maxPrice
+            val matchesType = when (filters.roomType) {
+                "Tất cả" -> true
+                "Phòng" -> room.roomType.startsWith("Phòng", ignoreCase = true)
+                else -> room.roomType.equals(filters.roomType, ignoreCase = true)
+            }
             val hasAvailability = if (checkIn != null && checkOut != null) {
                 bookings.count { booking ->
                     booking.roomId == room.id &&
@@ -71,12 +88,13 @@ class RoomViewModel(
                         booking.checkInDate < checkOut && booking.checkOutDate > checkIn
                 } < room.maxSlots
             } else true
-            matchesKeyword && matchesCapacity && hasAvailability
+            matchesKeyword && matchesCapacity && matchesPrice && matchesType && hasAvailability
         }
         when (sort) {
             RoomSort.RECOMMENDED -> filtered.sortedByDescending { it.rating }
             RoomSort.PRICE_LOW -> filtered.sortedBy { it.price }
             RoomSort.PRICE_HIGH -> filtered.sortedByDescending { it.price }
+            RoomSort.RATING -> filtered.sortedByDescending { it.rating }
         }
     }
 
@@ -140,8 +158,17 @@ class RoomViewModel(
         _sortOrder.value = when (_sortOrder.value) {
             RoomSort.RECOMMENDED -> RoomSort.PRICE_LOW
             RoomSort.PRICE_LOW -> RoomSort.PRICE_HIGH
-            RoomSort.PRICE_HIGH -> RoomSort.RECOMMENDED
+            RoomSort.PRICE_HIGH -> RoomSort.RATING
+            RoomSort.RATING -> RoomSort.RECOMMENDED
         }
+    }
+
+    fun setMaxPrice(price: Double) {
+        _maxPrice.value = price.coerceIn(300_000.0, 3_000_000.0)
+    }
+
+    fun setRoomType(type: String) {
+        _roomType.value = type
     }
 
     fun clearSearchFilters() {
@@ -150,6 +177,8 @@ class RoomViewModel(
         _checkOutDate.value = null
         _guestCount.value = 1
         _sortOrder.value = RoomSort.RECOMMENDED
+        _maxPrice.value = 3_000_000.0
+        _roomType.value = "Tất cả"
     }
 
     // Favorite operations
@@ -290,8 +319,16 @@ class RoomViewModel(
 enum class RoomSort(val label: String) {
     RECOMMENDED("Đề xuất"),
     PRICE_LOW("Giá thấp nhất"),
-    PRICE_HIGH("Giá cao nhất")
+    PRICE_HIGH("Giá cao nhất"),
+    RATING("Đánh giá tốt")
 }
+
+private data class SearchFilters(
+    val query: String,
+    val guests: Int,
+    val maxPrice: Double,
+    val roomType: String
+)
 
 class RoomViewModelFactory(
     private val repository: HomestayRepository,

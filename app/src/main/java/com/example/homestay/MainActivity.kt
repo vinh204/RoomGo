@@ -33,6 +33,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -53,9 +54,12 @@ class MainActivity : AppCompatActivity() {
     }
     
     private var roomAdapter: RoomAdapter? = null
+    private var featuredRoomAdapter: RoomAdapter? = null
+    private var recentRoomAdapter: RoomAdapter? = null
     private var favoriteAdapter: RoomAdapter? = null
     private var bookingAdapter: BookingAdapter? = null
     private var searchResultsJob: Job? = null
+    private var homeSectionsJob: Job? = null
     private var isObservingFavorites = false
     private var isObservingBookings = false
     private var currentUserId: Long = -1L
@@ -89,20 +93,20 @@ class MainActivity : AppCompatActivity() {
         currentUserId = sessionManager.getUserId()
 
         // Sync rooms from backend API
-        syncRoomsFromBackend()
+        refreshRooms()
 
         setupBottomNav()
         loadContent(R.layout.content_search)
         bottomNav.selectedItemId = R.id.navigation_search
     }
     
-    private fun syncRoomsFromBackend() {
+    private fun refreshRooms() {
         lifecycleScope.launch {
             try {
                 // Clean up duplicate rooms trước khi sync
                 repository.cleanupDuplicateRooms()
                 
-                val success = repository.syncRoomsFromAPI()
+                val success = repository.refreshLocalRooms()
                 if (success) {
                     android.util.Log.d("MainActivity", "Rooms synced successfully from backend")
                     
@@ -122,7 +126,7 @@ class MainActivity : AppCompatActivity() {
      * Dùng khi sync tự động (khi chuyển tab, quay lại app)
      * Có debounce để tránh sync quá thường xuyên
      */
-    private fun syncRoomsFromBackendSilent() {
+    private fun refreshRoomsSilent() {
         val currentTime = System.currentTimeMillis()
         // Chỉ sync nếu đã qua cooldown period
         if (currentTime - lastRoomsSyncTime < SYNC_COOLDOWN_MS) {
@@ -136,7 +140,7 @@ class MainActivity : AppCompatActivity() {
                 // Clean up duplicate rooms trước khi sync
                 repository.cleanupDuplicateRooms()
                 
-                val success = repository.syncRoomsFromAPI()
+                val success = repository.refreshLocalRooms()
                 if (success) {
                     android.util.Log.d("MainActivity", "Rooms synced silently from backend")
                     
@@ -151,13 +155,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun syncRoomsFromBackendWithRefresh(swipeRefresh: SwipeRefreshLayout) {
+    private fun refreshRoomsWithIndicator(swipeRefresh: SwipeRefreshLayout) {
         lifecycleScope.launch {
             try {
                 // Clean up duplicate rooms trước khi sync
                 repository.cleanupDuplicateRooms()
                 
-                val success = repository.syncRoomsFromAPI()
+                val success = repository.refreshLocalRooms()
                 if (success) {
                     android.util.Log.d("MainActivity", "Rooms synced successfully from backend (pull-to-refresh)")
                     
@@ -252,7 +256,7 @@ class MainActivity : AppCompatActivity() {
         // Chỉ sync nếu đang ở tab search để tránh sync không cần thiết
         when (bottomNav.selectedItemId) {
             R.id.navigation_search -> {
-                syncRoomsFromBackendSilent()
+                refreshRoomsSilent()
             }
             R.id.navigation_booking -> {
                 syncBookingsFromBackendSilent()
@@ -266,7 +270,7 @@ class MainActivity : AppCompatActivity() {
         // Sync rooms/bookings khi resume (để đảm bảo luôn có dữ liệu mới nhất từ admin)
         when (bottomNav.selectedItemId) {
             R.id.navigation_search -> {
-                syncRoomsFromBackendSilent()
+                refreshRoomsSilent()
             }
             R.id.navigation_booking -> {
                 syncBookingsFromBackendSilent()
@@ -292,7 +296,7 @@ class MainActivity : AppCompatActivity() {
                     loadContent(R.layout.content_search)
                     setupSearchContent()
                     // Sync rooms khi quay lại tab search để đảm bảo đồng bộ với admin
-                    syncRoomsFromBackend()
+                    refreshRooms()
                 }
                 R.id.navigation_saved -> {
                     if (!sessionManager.isLoggedIn()) {
@@ -320,7 +324,7 @@ class MainActivity : AppCompatActivity() {
             when (bottomNav.selectedItemId) {
                 R.id.navigation_search -> {
                     // Sync rooms khi quay lại tab search (ví dụ: từ RoomDetailActivity)
-                    syncRoomsFromBackendSilent()
+                    refreshRoomsSilent()
                 }
                 R.id.navigation_booking -> {
                     setupBookingsContent()
@@ -343,7 +347,7 @@ class MainActivity : AppCompatActivity() {
                     setupSearchContent()
                     // Sync rooms khi chuyển sang tab search để đảm bảo đồng bộ với admin
                     // Sync ngay lập tức để user thấy thay đổi từ admin
-                    syncRoomsFromBackendSilent()
+                    refreshRoomsSilent()
                     true
                 }
                 R.id.navigation_saved -> {
@@ -392,6 +396,11 @@ class MainActivity : AppCompatActivity() {
         val tvGreeting = contentContainer.findViewById<TextView>(R.id.tv_home_greeting)
         val tvResultCount = contentContainer.findViewById<TextView>(R.id.tv_result_count)
         val emptyView = contentContainer.findViewById<TextView>(R.id.tv_empty_rooms)
+        val progressRooms = contentContainer.findViewById<android.view.View>(R.id.progress_rooms)
+        val featuredRecycler = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_featured_rooms)
+        val recentRecycler = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_recent_rooms)
+        val recentSection = contentContainer.findViewById<android.view.View>(R.id.section_recent_rooms)
+        val retryRooms = contentContainer.findViewById<MaterialButton>(R.id.btn_retry_rooms)
 
         tvGreeting?.text = sessionManager.getUserName()
             ?.takeIf { sessionManager.isLoggedIn() && it.isNotBlank() }
@@ -400,11 +409,11 @@ class MainActivity : AppCompatActivity() {
         
         // Setup SwipeRefreshLayout
         swipeRefresh?.setOnRefreshListener {
-            syncRoomsFromBackendWithRefresh(swipeRefresh)
+            refreshRoomsWithIndicator(swipeRefresh)
         }
         
         // Sync rooms mỗi khi setup search content để đảm bảo có dữ liệu mới nhất từ admin
-        syncRoomsFromBackendSilent()
+                    refreshRoomsSilent()
         
         recyclerView?.let { rv ->
             val userId = sessionManager.getUserId()
@@ -422,6 +431,7 @@ class MainActivity : AppCompatActivity() {
                 roomAdapter = RoomAdapter(
                     onRoomClick = { room ->
                         // Navigate to room detail
+                        rememberViewedRoom(room.id)
                         val intent = Intent(this@MainActivity, RoomDetailActivity::class.java)
                         intent.putExtra("room_id", room.id)
                         startActivity(intent)
@@ -455,6 +465,36 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             
+            fun discoveryAdapter() = RoomAdapter(
+                onRoomClick = { room ->
+                    rememberViewedRoom(room.id)
+                    startActivity(Intent(this@MainActivity, RoomDetailActivity::class.java).putExtra("room_id", room.id))
+                },
+                onFavoriteClick = { room, _ ->
+                    if (userId != -1L) viewModel.toggleFavorite(userId, room.id)
+                    else openLogin("Vui lòng đăng nhập để lưu phòng yêu thích")
+                },
+                getFavoriteStatus = { id -> favoriteStatusMap[id] ?: false }
+            )
+            featuredRoomAdapter = discoveryAdapter()
+            recentRoomAdapter = discoveryAdapter()
+            featuredRecycler?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            featuredRecycler?.adapter = featuredRoomAdapter
+            recentRecycler?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            recentRecycler?.adapter = recentRoomAdapter
+
+            homeSectionsJob?.cancel()
+            homeSectionsJob = lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.availableRooms.collect { rooms ->
+                        featuredRoomAdapter?.submitList(rooms.sortedByDescending { it.rating }.take(3))
+                        val recentRooms = getViewedRoomIds().mapNotNull { id -> rooms.find { it.id == id } }
+                        recentRoomAdapter?.submitList(recentRooms)
+                        recentSection?.visibility = if (recentRooms.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
+                    }
+                }
+            }
+
             rv.layoutManager = LinearLayoutManager(this)
             rv.adapter = roomAdapter
 
@@ -464,13 +504,22 @@ class MainActivity : AppCompatActivity() {
             searchResultsJob?.cancel()
             searchResultsJob = lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.searchResults.collect { rooms ->
+                    viewModel.searchResults
+                        .catch { error ->
+                            progressRooms?.visibility = android.view.View.GONE
+                            retryRooms?.visibility = android.view.View.VISIBLE
+                            emptyView?.text = error.message ?: "Không thể tải danh sách phòng"
+                            emptyView?.visibility = android.view.View.VISIBLE
+                        }
+                        .collect { rooms ->
                         Log.d("MainActivity", "Received ${rooms.size} rooms from database")
                         roomAdapter?.submitList(rooms)
+                        progressRooms?.visibility = android.view.View.GONE
+                        retryRooms?.visibility = android.view.View.GONE
                         tvResultCount?.text = "${rooms.size} phòng phù hợp"
                         emptyView?.visibility = if (rooms.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                         rv.visibility = if (rooms.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
-                    }
+                        }
                 }
             }
         }
@@ -488,6 +537,9 @@ class MainActivity : AppCompatActivity() {
         val tvGuestCount = contentContainer.findViewById<TextView>(R.id.tv_guest_count)
         val btnSort = contentContainer.findViewById<MaterialButton>(R.id.btn_sort)
         val btnClearFilters = contentContainer.findViewById<MaterialButton>(R.id.btn_clear_filters)
+        val sliderMaxPrice = contentContainer.findViewById<com.google.android.material.slider.Slider>(R.id.slider_max_price)
+        val tvPriceFilter = contentContainer.findViewById<TextView>(R.id.tv_price_filter)
+        val chipGroupRoomType = contentContainer.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_group_room_type)
 
         // Setup search text watcher
         etSearch?.addTextChangedListener(object : TextWatcher {
@@ -504,11 +556,31 @@ class MainActivity : AppCompatActivity() {
         btnGuestMinus?.setOnClickListener { updateGuestCount(-1) }
         btnGuestPlus?.setOnClickListener { updateGuestCount(1) }
         btnSort?.setOnClickListener { viewModel.cycleSortOrder() }
+        sliderMaxPrice?.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) viewModel.setMaxPrice(value.toDouble())
+            val price = java.text.NumberFormat.getNumberInstance(Locale("vi", "VN")).format(value.toLong())
+            tvPriceFilter?.text = "Giá tối đa: $price đ / đêm"
+        }
+        chipGroupRoomType?.setOnCheckedStateChangeListener { _, checkedIds ->
+            viewModel.setRoomType(when (checkedIds.firstOrNull()) {
+                R.id.chip_type_room -> "Phòng"
+                R.id.chip_type_studio -> "Studio"
+                R.id.chip_type_villa -> "Villa"
+                else -> "Tất cả"
+            })
+        }
         btnClearFilters?.setOnClickListener {
             viewModel.clearSearchFilters()
             etSearch?.setText("")
             tvCheckInDate?.text = "Chọn ngày"
             tvCheckOutDate?.text = "Chọn ngày"
+            sliderMaxPrice?.value = 3_000_000f
+            chipGroupRoomType?.check(R.id.chip_type_all)
+        }
+
+        contentContainer.findViewById<MaterialButton>(R.id.btn_retry_rooms)?.setOnClickListener {
+            contentContainer.findViewById<android.view.View>(R.id.progress_rooms)?.visibility = android.view.View.VISIBLE
+            refreshRoomsSilent()
         }
 
         lifecycleScope.launch {
@@ -816,6 +888,23 @@ class MainActivity : AppCompatActivity() {
         message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
         startActivity(Intent(this, LoginActivity::class.java))
     }
+
+    private fun rememberViewedRoom(roomId: Long) {
+        val ids = getViewedRoomIds().toMutableList().apply {
+            remove(roomId)
+            add(0, roomId)
+        }.take(5)
+        getSharedPreferences("RecentRooms", MODE_PRIVATE).edit()
+            .putString("room_ids", ids.joinToString(","))
+            .apply()
+    }
+
+    private fun getViewedRoomIds(): List<Long> =
+        getSharedPreferences("RecentRooms", MODE_PRIVATE)
+            .getString("room_ids", "")
+            .orEmpty()
+            .split(',')
+            .mapNotNull { it.toLongOrNull() }
 
     private fun showEditProfileDialog(userId: Long) {
         val dialog = BottomSheetDialog(this)

@@ -27,15 +27,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Xin chào, Khách tham quan"
-            android:textColor="@color/home_title"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textColor="@color/home_subtitle"
+            android:textSize="14sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Bạn muốn nghỉ ở đâu?"
+            android:textColor="@color/home_title"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Tìm nơi lưu trú phù hợp cho chuyến đi của bạn"
             android:textColor="@color/home_subtitle"
             android:textSize="14sp" />
 
@@ -228,6 +236,63 @@
                         android:textSize="20sp" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tv_price_filter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Giá tối đa: 3.000.000 đ / đêm"
+                    android:textColor="@color/home_text"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_max_price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:value="3000000"
+                    android:valueFrom="300000"
+                    android:valueTo="3000000"
+                    android:stepSize="100000" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chip_group_room_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_type_all"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Tất cả" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_type_room"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Phòng" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_type_studio"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Studio" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_type_villa"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Villa" />
+                </com.google.android.material.chip.ChipGroup>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_search"
                     android:layout_width="match_parent"
@@ -241,6 +306,59 @@
                     app:strokeColor="@android:color/transparent" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="#E8F3FF"
+            android:padding="16dp"
+            android:text="Ưu đãi hôm nay: giảm 10% cho booking từ 2 đêm trở lên"
+            android:textColor="@color/home_primary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Phòng nổi bật"
+            android:textColor="@color/home_title"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_featured_rooms"
+            android:layout_width="match_parent"
+            android:layout_height="340dp"
+            android:layout_marginTop="12dp"
+            android:clipToPadding="false"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/section_recent_rooms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bạn đã xem gần đây"
+                android:textColor="@color/home_title"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_recent_rooms"
+                android:layout_width="match_parent"
+                android:layout_height="340dp"
+                android:layout_marginTop="12dp"
+                android:clipToPadding="false"
+                android:orientation="horizontal" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tv_room_section_title"
@@ -297,6 +415,24 @@
             android:text="Không tìm thấy phòng phù hợp. Hãy thử đổi ngày hoặc bộ lọc."
             android:textColor="@color/home_subtitle"
             android:textSize="15sp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progress_rooms"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_retry_rooms"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:text="Thử lại"
+            android:textAllCaps="false"
             android:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView

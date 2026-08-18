@@ -150,7 +150,7 @@ class HomestayRepository(
         }
     }
     
-    suspend fun syncRoomsFromAPI(): Boolean {
+    suspend fun refreshLocalRooms(): Boolean {
         return true
     }
 
