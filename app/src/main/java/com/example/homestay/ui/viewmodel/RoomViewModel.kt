@@ -245,6 +245,10 @@ class RoomViewModel(
         }
     }
 
+    fun deleteBooking(booking: Booking) {
+        viewModelScope.launch { repository.deleteBooking(booking) }
+    }
+
     fun getBookingsByUserId(userId: Long): Flow<List<Booking>> = repository.getBookingsByUserId(userId)
     
     /**

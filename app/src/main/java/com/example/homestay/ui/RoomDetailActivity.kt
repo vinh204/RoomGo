@@ -148,6 +148,10 @@ class RoomDetailActivity : AppCompatActivity() {
         val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
         val formattedPrice = formatter.format(room.price.toLong())
         findViewById<TextView>(R.id.tv_price).text = "$formattedPrice đ / đêm"
+        findViewById<TextView>(R.id.tv_bottom_price).text = "$formattedPrice đ / đêm"
+        val available = room.isAvailable
+        findViewById<TextView>(R.id.tv_availability_status).text = if (available) "Còn phòng" else "Đã kín"
+        findViewById<MaterialButton>(R.id.btn_book).isEnabled = available
     }
 
     private fun setupBookButton() {
@@ -183,6 +187,9 @@ class RoomDetailActivity : AppCompatActivity() {
         val tvCheckInDate = dialogView.findViewById<TextView>(R.id.tv_check_in_date)
         val tvCheckOutDate = dialogView.findViewById<TextView>(R.id.tv_check_out_date)
         val etGuestCount = dialogView.findViewById<TextInputEditText>(R.id.et_guest_count)
+        val btnGuestMinus = dialogView.findViewById<MaterialButton>(R.id.btn_guest_minus)
+        val btnGuestPlus = dialogView.findViewById<MaterialButton>(R.id.btn_guest_plus)
+        val tvStaySummary = dialogView.findViewById<TextView>(R.id.tv_stay_summary)
         val tvTotalPrice = dialogView.findViewById<TextView>(R.id.tv_total_price)
         val tvSlotInfo = dialogView.findViewById<TextView>(R.id.tv_slot_info)
         val layoutCheckIn = dialogView.findViewById<LinearLayout>(R.id.layout_check_in)
@@ -213,6 +220,7 @@ class RoomDetailActivity : AppCompatActivity() {
                 val totalPrice = pricePerDay * days
                 val formattedTotal = formatter.format(totalPrice.toLong())
                 tvTotalPrice?.text = "$formattedTotal đ"
+                tvStaySummary?.text = "$days đêm × ${formatter.format(pricePerDay.toLong())} đ"
                 
                 // Kiểm tra và hiển thị slot availability
                 lifecycleScope.launch {
@@ -242,6 +250,13 @@ class RoomDetailActivity : AppCompatActivity() {
                 tvSlotInfo?.visibility = View.GONE
             }
         }
+
+        fun changeGuestCount(delta: Int) {
+            val current = etGuestCount?.text?.toString()?.toIntOrNull() ?: 1
+            etGuestCount?.setText((current + delta).coerceIn(1, room.maxGuests).toString())
+        }
+        btnGuestMinus?.setOnClickListener { changeGuestCount(-1) }
+        btnGuestPlus?.setOnClickListener { changeGuestCount(1) }
 
         // Setup slot selection
         val slotSelectionAdapter = SlotSelectionAdapter { slot ->
@@ -487,6 +502,10 @@ class RoomDetailActivity : AppCompatActivity() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_payment, null)
         dialogView.setBackgroundColor(android.graphics.Color.WHITE)
         dialog.setContentView(dialogView)
+        var paymentConfirmed = false
+        dialog.setOnDismissListener {
+            if (!paymentConfirmed) viewModel.deleteBooking(booking)
+        }
 
         val tvBookingInfo = dialogView.findViewById<TextView>(R.id.tv_booking_info)
         val rgPaymentMethod = dialogView.findViewById<android.widget.RadioGroup>(R.id.rg_payment_method)
@@ -549,13 +568,14 @@ class RoomDetailActivity : AppCompatActivity() {
                     val message = "Đặt phòng thành công! Vui lòng thanh toán khi đến nơi."
 
                     runOnUiThread {
+                        paymentConfirmed = true
                         Toast.makeText(
                             this@RoomDetailActivity,
                             message,
                             Toast.LENGTH_LONG
                         ).show()
                         dialog.dismiss()
-                        finish() // Return to previous screen
+                        showBookingSuccess(booking)
                     }
                 } catch (e: Exception) {
                     Log.e("RoomDetailActivity", "Error processing payment: ${e.message}", e)
@@ -574,6 +594,20 @@ class RoomDetailActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    private fun showBookingSuccess(booking: Booking) {
+        val bookingCode = "HV${booking.id.toString().padStart(8, '0')}"
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Đặt phòng thành công")
+            .setMessage("Mã đặt chỗ: $bookingCode\nTrạng thái: Chờ xác nhận\nPhương thức: Thanh toán khi nhận phòng")
+            .setPositiveButton("Xem đặt chỗ") { _, _ ->
+                startActivity(android.content.Intent(this, com.example.homestay.MainActivity::class.java).putExtra("open_tab", "bookings"))
+                finish()
+            }
+            .setNegativeButton("Về trang chủ") { _, _ -> finish() }
+            .setCancelable(false)
+            .show()
     }
 }
 

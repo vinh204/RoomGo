@@ -96,8 +96,12 @@ class MainActivity : AppCompatActivity() {
         refreshRooms()
 
         setupBottomNav()
-        loadContent(R.layout.content_search)
-        bottomNav.selectedItemId = R.id.navigation_search
+        if (intent.getStringExtra("open_tab") == "bookings" && sessionManager.isLoggedIn()) {
+            bottomNav.selectedItemId = R.id.navigation_booking
+        } else {
+            loadContent(R.layout.content_search)
+            bottomNav.selectedItemId = R.id.navigation_search
+        }
     }
     
     private fun refreshRooms() {

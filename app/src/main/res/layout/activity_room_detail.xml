@@ -37,7 +37,7 @@
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
             android:paddingTop="16dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="112dp">
 
             <!-- Room Image -->
             <ImageView
@@ -153,6 +153,19 @@
                     android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_availability_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="#EAF7EF"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="Còn phòng"
+                android:textColor="#18794E"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <!-- Description -->
             <TextView
@@ -298,21 +311,40 @@
                 android:layout_marginTop="12dp"
                 android:nestedScrollingEnabled="false" />
 
-            <!-- Book Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_book"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:text="Đặt phòng ngay"
-                android:textAllCaps="false"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                app:backgroundTint="@color/home_primary"
-                app:cornerRadius="12dp" />
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_gravity="bottom"
+        android:background="@android:color/white"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp">
+
+        <TextView
+            android:id="@+id/tv_bottom_price"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="0 đ / đêm"
+            android:textColor="@color/home_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_book"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:text="Đặt phòng"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            app:backgroundTint="@color/home_primary"
+            app:cornerRadius="8dp" />
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
