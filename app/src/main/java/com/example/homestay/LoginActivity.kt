@@ -51,21 +51,6 @@ class LoginActivity : AppCompatActivity() {
         val etPassword = findViewById<TextInputEditText>(R.id.et_password)
         val btnLogin = findViewById<MaterialButton>(R.id.btn_login)
         val tvRegisterLink = findViewById<android.widget.TextView>(R.id.tv_register_link)
-        val btnAdminLogin = findViewById<MaterialButton>(R.id.btn_admin_login)
-        val btnContinueGuest = findViewById<MaterialButton>(R.id.btn_continue_guest)
-
-        btnContinueGuest.setOnClickListener { navigateToMain() }
-
-        btnAdminLogin.setOnClickListener {
-            startActivity(Intent(this, AdminLoginActivity::class.java))
-        }
-
-        // Long press anywhere trên màn hình để mở Admin Login (hidden feature)
-        val rootView = findViewById<android.view.View>(android.R.id.content)
-        rootView.setOnLongClickListener {
-            startActivity(Intent(this, AdminLoginActivity::class.java))
-            true
-        }
 
         // Animation cho Form Container
         val loginForm = findViewById<android.view.View>(R.id.login_form_container)
@@ -89,6 +74,16 @@ class LoginActivity : AppCompatActivity() {
 
             if (password.isEmpty()) {
                 etPassword.error = "Vui lòng nhập mật khẩu"
+                return@setOnClickListener
+            }
+
+            if (email.equals(ADMIN_USERNAME, ignoreCase = true)) {
+                if (password == ADMIN_PASSWORD) {
+                    saveAdminSession()
+                    navigateToAdminDashboard()
+                } else {
+                    Toast.makeText(this, "Tên đăng nhập hoặc mật khẩu không đúng", Toast.LENGTH_SHORT).show()
+                }
                 return@setOnClickListener
             }
 
@@ -138,6 +133,28 @@ class LoginActivity : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
+    }
+
+    private fun saveAdminSession() {
+        getSharedPreferences("AdminSession", MODE_PRIVATE).edit()
+            .putString("admin_id", "local-admin")
+            .putString("admin_username", ADMIN_USERNAME)
+            .putString("admin_fullname", "Administrator")
+            .putString("admin_role", "super_admin")
+            .putBoolean("is_admin_logged_in", true)
+            .apply()
+    }
+
+    private fun navigateToAdminDashboard() {
+        val intent = Intent(this, AdminDashboardActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
+    companion object {
+        private const val ADMIN_USERNAME = "admin"
+        private const val ADMIN_PASSWORD = "Admin@123"
     }
 }
 
