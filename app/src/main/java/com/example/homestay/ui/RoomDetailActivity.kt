@@ -490,15 +490,8 @@ class RoomDetailActivity : AppCompatActivity() {
 
         val tvBookingInfo = dialogView.findViewById<TextView>(R.id.tv_booking_info)
         val rgPaymentMethod = dialogView.findViewById<android.widget.RadioGroup>(R.id.rg_payment_method)
-        val rbQrCode = dialogView.findViewById<RadioButton>(R.id.rb_qr_code)
-        val rbMomo = dialogView.findViewById<RadioButton>(R.id.rb_momo)
-        val rbZaloPay = dialogView.findViewById<RadioButton>(R.id.rb_zalopay)
-        val rbPayOnSite = dialogView.findViewById<RadioButton>(R.id.rb_pay_on_site)
         val cardQrCode = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_qr_code)
-        val cardPaymentInfo = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_payment_info)
         val imgQrCode = dialogView.findViewById<ImageView>(R.id.img_qr_code)
-        val tvPaymentMethodName = dialogView.findViewById<TextView>(R.id.tv_payment_method_name)
-        val tvPaymentInstructions = dialogView.findViewById<TextView>(R.id.tv_payment_instructions)
         val tvPaymentContent = dialogView.findViewById<TextView>(R.id.tv_payment_content)
         val tvTotalPayment = dialogView.findViewById<TextView>(R.id.tv_total_payment)
         val btnConfirmPayment = dialogView.findViewById<MaterialButton>(R.id.btn_confirm_payment)
@@ -532,20 +525,9 @@ class RoomDetailActivity : AppCompatActivity() {
             when (paymentMethod) {
                 "qr_code" -> {
                     cardQrCode?.visibility = android.view.View.VISIBLE
-                    cardPaymentInfo?.visibility = android.view.View.GONE
-                }
-                "momo", "zalopay" -> {
-                    cardQrCode?.visibility = android.view.View.GONE
-                    cardPaymentInfo?.visibility = android.view.View.VISIBLE
-                    tvPaymentMethodName?.text = if (paymentMethod == "momo") "MoMo" else "ZaloPay"
-                    tvPaymentInstructions?.text = if (paymentMethod == "momo") 
-                        "Vui lòng mở ứng dụng MoMo và quét mã QR hoặc nhập số tiền để thanh toán"
-                    else
-                        "Vui lòng mở ứng dụng ZaloPay và quét mã QR hoặc nhập số tiền để thanh toán"
                 }
                 "pay_on_site" -> {
                     cardQrCode?.visibility = android.view.View.GONE
-                    cardPaymentInfo?.visibility = android.view.View.GONE
                 }
             }
         }
@@ -553,8 +535,6 @@ class RoomDetailActivity : AppCompatActivity() {
         rgPaymentMethod?.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
                 R.id.rb_qr_code -> updatePaymentUI("qr_code")
-                R.id.rb_momo -> updatePaymentUI("momo")
-                R.id.rb_zalopay -> updatePaymentUI("zalopay")
                 R.id.rb_pay_on_site -> updatePaymentUI("pay_on_site")
             }
         }
@@ -566,8 +546,6 @@ class RoomDetailActivity : AppCompatActivity() {
         btnConfirmPayment?.setOnClickListener {
             val selectedPaymentMethod = when (rgPaymentMethod?.checkedRadioButtonId) {
                 R.id.rb_qr_code -> "qr_code"
-                R.id.rb_momo -> "momo"
-                R.id.rb_zalopay -> "zalopay"
                 R.id.rb_pay_on_site -> "pay_on_site"
                 else -> "qr_code"
             }
@@ -587,7 +565,10 @@ class RoomDetailActivity : AppCompatActivity() {
                         "confirmed"
                     }
 
-                    val updatedBooking = booking.copy(status = newStatus)
+                    val updatedBooking = booking.copy(
+                        status = newStatus,
+                        paymentMethod = selectedPaymentMethod
+                    )
                     viewModel.updateBooking(updatedBooking)
 
                     val message = if (selectedPaymentMethod == "pay_on_site") {

@@ -61,24 +61,6 @@
                 android:paddingVertical="8dp" />
 
             <RadioButton
-                android:id="@+id/rb_momo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Thanh toán bằng MoMo"
-                android:textColor="@color/home_text"
-                android:textSize="15sp"
-                android:paddingVertical="8dp" />
-
-            <RadioButton
-                android:id="@+id/rb_zalopay"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Thanh toán bằng ZaloPay"
-                android:textColor="@color/home_text"
-                android:textSize="15sp"
-                android:paddingVertical="8dp" />
-
-            <RadioButton
                 android:id="@+id/rb_pay_on_site"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -143,45 +125,6 @@
                     android:text="Nội dung: Đặt phòng #HV00000001"
                     android:textColor="@color/home_subtitle"
                     android:textSize="11sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Payment Info for MoMo/ZaloPay -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_payment_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="@color/home_surface"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tv_payment_method_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="MoMo"
-                    android:textColor="@color/home_title"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_payment_instructions"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center"
-                    android:text="Vui lòng mở ứng dụng MoMo và quét mã QR hoặc nhập số tiền để thanh toán"
-                    android:textColor="@color/home_text"
-                    android:textSize="13sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

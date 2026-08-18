@@ -23,7 +23,7 @@ data class Booking(
     val guestCount: Int = 1,
     val totalPrice: Double,
     val status: String = "pending", // "pending", "confirmed", "cancelled", "completed"
-    val paymentMethod: String? = null, // "qr_code", "momo", "zalopay", "pay_on_site"
+    val paymentMethod: String? = null, // "qr_code" or "pay_on_site"
     val createdAt: Long = System.currentTimeMillis()
 )
 
