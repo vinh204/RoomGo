@@ -490,9 +490,7 @@ class RoomDetailActivity : AppCompatActivity() {
 
         val tvBookingInfo = dialogView.findViewById<TextView>(R.id.tv_booking_info)
         val rgPaymentMethod = dialogView.findViewById<android.widget.RadioGroup>(R.id.rg_payment_method)
-        val cardQrCode = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_qr_code)
-        val imgQrCode = dialogView.findViewById<ImageView>(R.id.img_qr_code)
-        val tvPaymentContent = dialogView.findViewById<TextView>(R.id.tv_payment_content)
+        val tvQrMaintenance = dialogView.findViewById<TextView>(R.id.tv_qr_maintenance)
         val tvTotalPayment = dialogView.findViewById<TextView>(R.id.tv_total_payment)
         val btnConfirmPayment = dialogView.findViewById<MaterialButton>(R.id.btn_confirm_payment)
 
@@ -510,26 +508,12 @@ class RoomDetailActivity : AppCompatActivity() {
         val formattedTotal = formatter.format(booking.totalPrice.toLong())
         tvTotalPayment?.text = "$formattedTotal đ"
 
-        // Load QR code image
-        imgQrCode?.load(R.drawable.qrthanhtoan) {
-            placeholder(R.drawable.app_logo)
-            error(R.drawable.app_logo)
-        }
-
-        // Update payment content text
-        val bookingIdFormatted = booking.id.toString().padStart(8, '0')
-        tvPaymentContent?.text = "Nội dung: Đặt phòng #HV$bookingIdFormatted"
-
-        // Ẩn/hiện các section khi chọn phương thức thanh toán
+        // Disable confirmation while QR payment is under maintenance.
         fun updatePaymentUI(paymentMethod: String) {
-            when (paymentMethod) {
-                "qr_code" -> {
-                    cardQrCode?.visibility = android.view.View.VISIBLE
-                }
-                "pay_on_site" -> {
-                    cardQrCode?.visibility = android.view.View.GONE
-                }
-            }
+            val qrUnderMaintenance = paymentMethod == "qr_code"
+            tvQrMaintenance?.visibility = if (qrUnderMaintenance) android.view.View.VISIBLE else android.view.View.GONE
+            btnConfirmPayment?.isEnabled = !qrUnderMaintenance
+            btnConfirmPayment?.text = if (qrUnderMaintenance) "QR đang bảo trì" else "Xác nhận thanh toán"
         }
 
         rgPaymentMethod?.setOnCheckedChangeListener { _, checkedId ->
@@ -540,15 +524,11 @@ class RoomDetailActivity : AppCompatActivity() {
         }
 
         // Set initial UI state
-        updatePaymentUI("qr_code") // Default to QR code
+        updatePaymentUI("pay_on_site")
 
         // Xử lý thanh toán
         btnConfirmPayment?.setOnClickListener {
-            val selectedPaymentMethod = when (rgPaymentMethod?.checkedRadioButtonId) {
-                R.id.rb_qr_code -> "qr_code"
-                R.id.rb_pay_on_site -> "pay_on_site"
-                else -> "qr_code"
-            }
+            val selectedPaymentMethod = "pay_on_site"
 
             // Simulate payment processing
             btnConfirmPayment?.isEnabled = false
@@ -558,12 +538,7 @@ class RoomDetailActivity : AppCompatActivity() {
                 try {
                     // For pay on site, status remains "pending"
                     // For other methods, simulate payment and update to "confirmed"
-                    val newStatus = if (selectedPaymentMethod == "pay_on_site") {
-                        "pending"
-                    } else {
-                        kotlinx.coroutines.delay(2000) // Simulate network delay
-                        "confirmed"
-                    }
+                    val newStatus = "pending"
 
                     val updatedBooking = booking.copy(
                         status = newStatus,
@@ -571,11 +546,7 @@ class RoomDetailActivity : AppCompatActivity() {
                     )
                     viewModel.updateBooking(updatedBooking)
 
-                    val message = if (selectedPaymentMethod == "pay_on_site") {
-                        "Đặt phòng thành công! Vui lòng thanh toán khi đến nơi."
-                    } else {
-                        "Thanh toán thành công! Đặt phòng đã được xác nhận."
-                    }
+                    val message = "Đặt phòng thành công! Vui lòng thanh toán khi đến nơi."
 
                     runOnUiThread {
                         Toast.makeText(

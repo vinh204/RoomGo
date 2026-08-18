@@ -54,7 +54,6 @@
                 android:id="@+id/rb_qr_code"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:checked="true"
                 android:text="Thanh toán bằng QR"
                 android:textColor="@color/home_text"
                 android:textSize="15sp"
@@ -64,69 +63,25 @@
                 android:id="@+id/rb_pay_on_site"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:checked="true"
                 android:text="Thanh toán khi nhận phòng"
                 android:textColor="@color/home_text"
                 android:textSize="15sp"
                 android:paddingVertical="8dp" />
         </RadioGroup>
 
-        <!-- QR Code Section -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_qr_code"
+        <TextView
+            android:id="@+id/tv_qr_maintenance"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:backgroundTint="@color/home_surface"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            android:visibility="visible">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="Quét mã QR để thanh toán"
-                    android:textColor="@color/home_title"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:id="@+id/img_qr_code"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
-                    android:layout_marginTop="12dp"
-                    android:contentDescription="Mã QR thanh toán"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/qrthanhtoan" />
-
-                <TextView
-                    android:id="@+id/tv_bank_info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center"
-                    android:text="Ngân hàng: MB Bank\nSố tài khoản: 0343814123\nChủ tài khoản: PHAM PHAN BA VIET"
-                    android:textColor="@color/home_text"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/tv_payment_content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center"
-                    android:text="Nội dung: Đặt phòng #HV00000001"
-                    android:textColor="@color/home_subtitle"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:background="#FFF4E5"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="Thanh toán QR đang bảo trì. Vui lòng chọn phương thức thanh toán khác."
+            android:textColor="#9A5B00"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
         <View
             android:layout_width="match_parent"
