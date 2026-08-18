@@ -543,7 +543,6 @@ class MainActivity : AppCompatActivity() {
         val btnClearFilters = contentContainer.findViewById<MaterialButton>(R.id.btn_clear_filters)
         val sliderMaxPrice = contentContainer.findViewById<com.google.android.material.slider.Slider>(R.id.slider_max_price)
         val tvPriceFilter = contentContainer.findViewById<TextView>(R.id.tv_price_filter)
-        val chipGroupRoomType = contentContainer.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_group_room_type)
 
         // Setup search text watcher
         etSearch?.addTextChangedListener(object : TextWatcher {
@@ -565,21 +564,12 @@ class MainActivity : AppCompatActivity() {
             val price = java.text.NumberFormat.getNumberInstance(Locale("vi", "VN")).format(value.toLong())
             tvPriceFilter?.text = "Giá tối đa: $price đ / đêm"
         }
-        chipGroupRoomType?.setOnCheckedStateChangeListener { _, checkedIds ->
-            viewModel.setRoomType(when (checkedIds.firstOrNull()) {
-                R.id.chip_type_room -> "Phòng"
-                R.id.chip_type_studio -> "Studio"
-                R.id.chip_type_villa -> "Villa"
-                else -> "Tất cả"
-            })
-        }
         btnClearFilters?.setOnClickListener {
             viewModel.clearSearchFilters()
             etSearch?.setText("")
             tvCheckInDate?.text = "Chọn ngày"
             tvCheckOutDate?.text = "Chọn ngày"
             sliderMaxPrice?.value = 3_000_000f
-            chipGroupRoomType?.check(R.id.chip_type_all)
         }
 
         contentContainer.findViewById<MaterialButton>(R.id.btn_retry_rooms)?.setOnClickListener {

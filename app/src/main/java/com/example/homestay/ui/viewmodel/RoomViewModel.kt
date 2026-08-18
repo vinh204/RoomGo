@@ -47,17 +47,14 @@ class RoomViewModel(
     private val _maxPrice = MutableStateFlow(3_000_000.0)
     val maxPrice: StateFlow<Double> = _maxPrice.asStateFlow()
 
-    private val _roomType = MutableStateFlow("Tất cả")
-    val roomType: StateFlow<String> = _roomType.asStateFlow()
-
     private val dateRange = combine(_checkInDate, _checkOutDate) { checkIn, checkOut ->
         checkIn to checkOut
     }
 
     private val searchFilters = combine(
-        _searchQuery, _guestCount, _maxPrice, _roomType
-    ) { query, guests, maxPrice, roomType ->
-        SearchFilters(query, guests, maxPrice, roomType)
+        _searchQuery, _guestCount, _maxPrice
+    ) { query, guests, maxPrice ->
+        SearchFilters(query, guests, maxPrice)
     }
 
     val searchResults: Flow<List<Room>> = combine(
@@ -76,11 +73,6 @@ class RoomViewModel(
                 room.address.contains(keyword, ignoreCase = true)
             val matchesCapacity = room.maxGuests >= filters.guests
             val matchesPrice = room.price <= filters.maxPrice
-            val matchesType = when (filters.roomType) {
-                "Tất cả" -> true
-                "Phòng" -> room.roomType.startsWith("Phòng", ignoreCase = true)
-                else -> room.roomType.equals(filters.roomType, ignoreCase = true)
-            }
             val hasAvailability = if (checkIn != null && checkOut != null) {
                 bookings.count { booking ->
                     booking.roomId == room.id &&
@@ -88,7 +80,7 @@ class RoomViewModel(
                         booking.checkInDate < checkOut && booking.checkOutDate > checkIn
                 } < room.maxSlots
             } else true
-            matchesKeyword && matchesCapacity && matchesPrice && matchesType && hasAvailability
+            matchesKeyword && matchesCapacity && matchesPrice && hasAvailability
         }
         when (sort) {
             RoomSort.RECOMMENDED -> filtered.sortedByDescending { it.rating }
@@ -167,10 +159,6 @@ class RoomViewModel(
         _maxPrice.value = price.coerceIn(300_000.0, 3_000_000.0)
     }
 
-    fun setRoomType(type: String) {
-        _roomType.value = type
-    }
-
     fun clearSearchFilters() {
         _searchQuery.value = ""
         _checkInDate.value = null
@@ -178,7 +166,6 @@ class RoomViewModel(
         _guestCount.value = 1
         _sortOrder.value = RoomSort.RECOMMENDED
         _maxPrice.value = 3_000_000.0
-        _roomType.value = "Tất cả"
     }
 
     // Favorite operations
@@ -330,8 +317,7 @@ enum class RoomSort(val label: String) {
 private data class SearchFilters(
     val query: String,
     val guests: Int,
-    val maxPrice: Double,
-    val roomType: String
+    val maxPrice: Double
 )
 
 class RoomViewModelFactory(

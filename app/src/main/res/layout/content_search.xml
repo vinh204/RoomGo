@@ -255,44 +255,6 @@
                     android:valueTo="3000000"
                     android:stepSize="100000" />
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group_room_type"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_type_all"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="Tất cả" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_type_room"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Phòng" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_type_studio"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Studio" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_type_villa"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Villa" />
-                </com.google.android.material.chip.ChipGroup>
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_search"
                     android:layout_width="match_parent"
