@@ -77,7 +77,7 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (email.equals(ADMIN_USERNAME, ignoreCase = true)) {
+            if (email.equals(ADMIN_EMAIL, ignoreCase = true)) {
                 if (password == ADMIN_PASSWORD) {
                     saveAdminSession()
                     navigateToAdminDashboard()
@@ -138,7 +138,7 @@ class LoginActivity : AppCompatActivity() {
     private fun saveAdminSession() {
         getSharedPreferences("AdminSession", MODE_PRIVATE).edit()
             .putString("admin_id", "local-admin")
-            .putString("admin_username", ADMIN_USERNAME)
+            .putString("admin_username", ADMIN_EMAIL)
             .putString("admin_fullname", "Administrator")
             .putString("admin_role", "super_admin")
             .putBoolean("is_admin_logged_in", true)
@@ -153,7 +153,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val ADMIN_USERNAME = "admin"
+        private const val ADMIN_EMAIL = "admin@gmail.com"
         private const val ADMIN_PASSWORD = "Admin@123"
     }
 }
