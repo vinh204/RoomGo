@@ -695,6 +695,8 @@ class MainActivity : AppCompatActivity() {
         val tvUserName = contentContainer.findViewById<TextView>(R.id.tv_user_name)
         val tvUserEmail = contentContainer.findViewById<TextView>(R.id.tv_user_email)
         val tvUserPhone = contentContainer.findViewById<TextView>(R.id.tv_user_phone)
+        val rowUserPhone = contentContainer.findViewById<android.view.View>(R.id.row_user_phone)
+        val tvMembership = contentContainer.findViewById<TextView>(R.id.tv_membership)
         val btnEditProfile = contentContainer.findViewById<MaterialButton>(R.id.btn_edit_profile)
         val btnLogout = contentContainer.findViewById<MaterialButton>(R.id.btn_logout)
 
@@ -712,7 +714,7 @@ class MainActivity : AppCompatActivity() {
                             tvUserName?.text = user?.fullName
                             tvUserEmail?.text = user?.email
                             tvUserPhone?.text = user?.phone
-                            tvUserPhone?.visibility = android.view.View.VISIBLE
+                            rowUserPhone?.visibility = android.view.View.VISIBLE
                         }
                         return@launch
                     }
@@ -725,21 +727,22 @@ class MainActivity : AppCompatActivity() {
                         tvUserName?.text = user.fullName
                         tvUserEmail?.text = user.email
                         tvUserPhone?.text = user.phone
-                        tvUserPhone?.visibility = android.view.View.VISIBLE
+                        rowUserPhone?.visibility = android.view.View.VISIBLE
                     }
                 } ?: run {
                     // Nếu không tìm thấy user, dùng thông tin từ session
                     runOnUiThread {
                         tvUserName?.text = sessionManager.getUserName() ?: "Người dùng"
                         tvUserEmail?.text = sessionManager.getUserEmail() ?: ""
-                        tvUserPhone?.visibility = android.view.View.GONE
+                        rowUserPhone?.visibility = android.view.View.GONE
                     }
                 }
             }
         } else {
             tvUserName?.text = "Khách tham quan"
-            tvUserEmail?.text = "Đăng nhập để quản lý đặt phòng và yêu thích"
-            tvUserPhone?.visibility = android.view.View.GONE
+            tvUserEmail?.text = "Chưa đăng nhập"
+            rowUserPhone?.visibility = android.view.View.GONE
+            tvMembership?.text = "Chưa có"
             btnEditProfile?.visibility = android.view.View.GONE
             btnLogout?.text = "Đăng nhập"
         }
