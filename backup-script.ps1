@@ -11,7 +11,7 @@ $sourceDir = "C:\Users\ADMIN\AndroidStudioProjects\homestay2"
 # Đường dẫn lưu backup (thay đổi theo ý bạn)
 $backupDir = "D:\Backups"
 
-# Tạo thư mục backup nếu chưa có
+# Tạo thư mục backup nếu chưa có 
 if (-not (Test-Path $backupDir)) {
     New-Item -ItemType Directory -Path $backupDir | Out-Null
     Write-Host "✅ Đã tạo thư mục backup: $backupDir" -ForegroundColor Green
