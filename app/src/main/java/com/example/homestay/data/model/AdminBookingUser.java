@@ -1,0 +1,1 @@
+package com.example.homestay.data.model;public final class AdminBookingUser{private final String id,email,fullName,phone;public AdminBookingUser(String i,String e,String n,String p){id=i;email=e;fullName=n;phone=p;}public String getId(){return id;}public String getEmail(){return email;}public String getFullName(){return fullName;}public String getPhone(){return phone;}}

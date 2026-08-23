@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView android:id="@+id/tv_review_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Đánh giá phòng" android:textColor="@color/home_title" android:textSize="22sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tv_review_room" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:textColor="@color/home_subtitle" android:textSize="14sp" />
+    <RatingBar android:id="@+id/rating_review" style="?android:attr/ratingBarStyleIndicator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginTop="20dp" android:isIndicator="false" android:numStars="5" android:rating="5" android:stepSize="1" android:progressTint="#FFB000" android:secondaryProgressTint="#FFB000" android:progressBackgroundTint="#C7C4CC" />
+    <TextView android:id="@+id/tv_rating_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Tuyệt vời" android:textColor="@color/home_primary" android:textStyle="bold" />
+    <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:hint="Chia sẻ trải nghiệm của bạn" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusTopEnd="12dp" app:boxCornerRadiusTopStart="12dp" app:counterEnabled="true" app:counterMaxLength="500">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_review_comment" android:layout_width="match_parent" android:layout_height="120dp" android:gravity="top" android:inputType="textCapSentences|textMultiLine" android:maxLength="500" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:gravity="end" android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_review_cancel" style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hủy" android:textColor="@color/home_primary" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_review_submit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="Gửi đánh giá" android:textColor="@android:color/white" app:backgroundTint="@color/home_primary" app:cornerRadius="20dp" />
+    </LinearLayout>
+</LinearLayout>

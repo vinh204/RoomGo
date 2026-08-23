@@ -1,75 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFFFFF"
-    android:forceDarkAllowed="false">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/home_background" android:forceDarkAllowed="false">
 
     <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/home_background" app:elevation="0dp">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/home_primary"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="60dp"
+            android:background="@color/home_primary" app:titleTextColor="@android:color/white" />
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_admin_search"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_margin="8dp"
-            android:background="@android:color/white"
-            android:hint="Tìm phòng theo tên"
-            android:paddingHorizontal="16dp"
-            android:singleLine="true" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginStart="16dp" android:layout_marginTop="14dp"
+            android:layout_marginEnd="16dp" android:hint="Tìm theo tên, khu vực hoặc loại phòng"
+            app:boxBackgroundColor="@color/home_surface" app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp" app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp" app:startIconDrawable="@drawable/ic_search_admin">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_admin_search" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:inputType="text" android:maxLines="1"
+                android:textColor="@color/home_title" android:textColorHint="@color/home_subtitle" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/chip_room_status" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:paddingHorizontal="8dp" app:singleSelection="true">
+            android:layout_height="wrap_content" android:paddingStart="16dp" android:paddingTop="6dp"
+            android:paddingEnd="16dp" android:paddingBottom="10dp" app:chipSpacingHorizontal="8dp"
+            android:saveEnabled="false" app:selectionRequired="true" app:singleSelection="true">
             <com.google.android.material.chip.Chip android:id="@+id/chip_rooms_all" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Tất cả" />
             <com.google.android.material.chip.Chip android:id="@+id/chip_rooms_active" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Đang mở" />
             <com.google.android.material.chip.Chip android:id="@+id/chip_rooms_hidden" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tạm ẩn" />
         </com.google.android.material.chip.ChipGroup>
-
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_rooms"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="8dp"
+        android:id="@+id/rv_rooms" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:clipToPadding="false" android:paddingStart="16dp" android:paddingTop="6dp"
+        android:paddingEnd="16dp" android:paddingBottom="96dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_room"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="@color/home_primary"
-        app:tint="@android:color/white" />
-
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/tv_empty"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Chưa có phòng phù hợp"
-        android:textColor="@color/home_subtitle"
-        android:visibility="gone" />
-
+        android:id="@+id/fab_add_room" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end" android:layout_marginEnd="20dp" android:layout_marginBottom="88dp" android:contentDescription="Thêm phòng"
+        android:src="@drawable/ic_add_admin" app:backgroundTint="@color/home_primary" app:tint="@android:color/white" />
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:visibility="gone" />
+    <TextView android:id="@+id/tv_empty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Chưa có phòng phù hợp" android:textColor="@color/home_subtitle" android:visibility="gone" />
+    <include layout="@layout/layout_admin_bottom_nav" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
-

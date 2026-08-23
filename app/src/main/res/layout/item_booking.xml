@@ -29,7 +29,7 @@
                 android:textColor="@color/home_subtitle"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                tools:text="Booking #HV20250321" />
+                tools:text="#RG260823003" />
 
             <TextView
                 android:id="@+id/tv_status"

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="52dp"
+    android:layout_height="match_parent"
+    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+    <ImageView
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="center"
+        android:contentDescription="Thông báo"
+        android:src="@drawable/ic_notifications"
+        app:tint="@android:color/white" />
+
+    <TextView
+        android:id="@+id/tv_notification_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/bg_notification_badge"
+        android:gravity="center"
+        android:minWidth="20dp"
+        android:paddingHorizontal="3dp"
+        android:textColor="@android:color/white"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</FrameLayout>

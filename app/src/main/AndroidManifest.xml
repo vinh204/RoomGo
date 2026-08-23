@@ -42,6 +42,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".NotificationsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.RoomDetailActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />

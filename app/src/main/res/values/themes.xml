@@ -23,6 +23,18 @@
     
     <!-- Admin theme - Force light mode only -->
     <style name="Theme.Homestay.Admin" parent="Theme.Material3.Light.NoActionBar">
-        <item name="android:forceDarkAllowed">false</item>
+    </style>
+    <style name="AdminNavItem">
+        <item name="android:layout_width">0dp</item><item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item><item name="android:background">@android:color/transparent</item>
+        <item name="android:clickable">true</item><item name="android:focusable">true</item>
+        <item name="android:gravity">center</item><item name="android:orientation">vertical</item>
+    </style>
+    <style name="AdminNavIcon">
+        <item name="android:layout_width">24dp</item><item name="android:layout_height">24dp</item>
+    </style>
+    <style name="AdminNavText">
+        <item name="android:layout_width">wrap_content</item><item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">4dp</item><item name="android:textSize">12sp</item><item name="android:textStyle">bold</item>
     </style>
 </resources>

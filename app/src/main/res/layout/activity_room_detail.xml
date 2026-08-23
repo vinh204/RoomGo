@@ -6,13 +6,13 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@color/home_surface" app:elevation="0dp">
+        android:background="@color/home_primary" app:elevation="0dp">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar" android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize" android:background="@color/home_surface"
-            app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:navigationIconTint="@color/home_title" app:title="Chi tiết phòng"
-            app:titleTextColor="@color/home_title" />
+            android:layout_height="60dp" android:background="@color/home_primary"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="@android:color/white" app:title="Chi tiết phòng"
+            app:titleTextColor="@android:color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -113,12 +113,8 @@
                 <TextView style="@style/RoomDetailSectionTitle" android:text="Giới thiệu" />
                 <TextView android:id="@+id/tv_description" android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:layout_marginTop="9dp"
-                    android:ellipsize="end" android:lineSpacingExtra="4dp" android:maxLines="3"
+                    android:lineSpacingExtra="4dp"
                     android:textColor="@color/home_text" android:textSize="15sp" />
-                <TextView android:id="@+id/tv_description_toggle" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:layout_marginTop="6dp"
-                    android:paddingVertical="5dp" android:text="Xem thêm"
-                    android:textColor="@color/home_primary" android:textStyle="bold" />
 
                 <TextView style="@style/RoomDetailSectionTitle" android:text="Tiện nghi" />
                 <com.google.android.material.card.MaterialCardView
@@ -126,10 +122,14 @@
                     android:layout_marginTop="10dp" app:cardBackgroundColor="@color/home_surface"
                     app:cardCornerRadius="14dp" app:cardElevation="0dp"
                     app:strokeColor="@color/home_divider" app:strokeWidth="1dp">
-                    <TextView android:id="@+id/tv_amenities" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:drawableStart="@android:drawable/ic_menu_compass"
-                        android:drawablePadding="12dp" android:lineSpacingExtra="5dp" android:padding="16dp"
-                        android:textColor="@color/home_text" android:textSize="14sp" />
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chip_group_amenities"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="12dp"
+                        app:chipSpacingHorizontal="8dp"
+                        app:chipSpacingVertical="4dp"
+                        app:singleLine="false" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <TextView style="@style/RoomDetailSectionTitle" android:text="Vị trí" />
@@ -142,7 +142,7 @@
                         android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
                         <ImageView android:layout_width="26dp" android:layout_height="26dp"
                             android:contentDescription="Địa chỉ" android:src="@android:drawable/ic_menu_mylocation"
-                            android:tint="@color/home_primary" />
+                            app:tint="@color/home_primary" />
                         <TextView android:id="@+id/tv_address" android:layout_width="0dp"
                             android:layout_height="wrap_content" android:layout_marginStart="13dp"
                             android:layout_weight="1" android:textColor="@color/home_text" android:textSize="14sp" />
@@ -158,6 +158,23 @@
                     android:layout_marginTop="12dp" android:nestedScrollingEnabled="false" />
                 <TextView android:id="@+id/tv_price" android:layout_width="1dp"
                     android:layout_height="1dp" android:visibility="invisible" />
+
+                <TextView style="@style/RoomDetailSectionTitle" android:text="Đánh giá của khách" />
+                <TextView android:id="@+id/tv_reviews_summary" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="6dp"
+                    android:text="5.0 ★ · Chưa có đánh giá" android:textColor="@color/home_subtitle" android:textSize="14sp" />
+                <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_reviews"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:nestedScrollingEnabled="false" />
+                <TextView android:id="@+id/tv_reviews_empty" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="10dp"
+                    android:background="@color/home_surface" android:gravity="center" android:padding="20dp"
+                    android:text="Chưa có đánh giá" android:textColor="@color/home_subtitle" android:textSize="14sp" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btn_show_all_reviews"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp" android:text="Xem tất cả đánh giá"
+                    android:textColor="@color/home_primary" android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -165,7 +182,8 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_gravity="bottom" app:cardBackgroundColor="@color/home_surface"
-        app:cardCornerRadius="0dp" app:cardElevation="12dp">
+        app:cardCornerRadius="0dp" app:cardElevation="0dp"
+        app:strokeColor="@android:color/transparent" app:strokeWidth="0dp">
         <LinearLayout android:layout_width="match_parent" android:layout_height="88dp"
             android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="20dp">
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"

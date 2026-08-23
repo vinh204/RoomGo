@@ -72,7 +72,7 @@
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
             android:src="@android:drawable/checkbox_on_background"
-            android:tint="@color/home_primary"
+            app:tint="@color/home_primary"
             android:visibility="gone"
             android:contentDescription="Đã chọn" />
     </LinearLayout>
