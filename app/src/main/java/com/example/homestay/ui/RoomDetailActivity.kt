@@ -72,6 +72,7 @@ class RoomDetailActivity : AppCompatActivity() {
 
         setupToolbar()
         setupSlotsRecyclerView()
+        setupDescriptionToggle()
         observeRoomData()
         setupBookButton()
     }
@@ -88,6 +89,17 @@ class RoomDetailActivity : AppCompatActivity() {
         slotAdapter = SlotAdapter()
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = slotAdapter
+    }
+
+    private fun setupDescriptionToggle() {
+        val description = findViewById<TextView>(R.id.tv_description)
+        val toggle = findViewById<TextView>(R.id.tv_description_toggle)
+        toggle.setOnClickListener {
+            val isCollapsed = description.maxLines == 3
+            description.maxLines = if (isCollapsed) Int.MAX_VALUE else 3
+            description.ellipsize = if (isCollapsed) null else android.text.TextUtils.TruncateAt.END
+            toggle.text = if (isCollapsed) "Thu gọn" else "Xem thêm"
+        }
     }
 
     private fun observeRoomData() {
@@ -150,8 +162,14 @@ class RoomDetailActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tv_price).text = "$formattedPrice đ / đêm"
         findViewById<TextView>(R.id.tv_bottom_price).text = "$formattedPrice đ / đêm"
         val available = room.isAvailable
-        findViewById<TextView>(R.id.tv_availability_status).text = if (available) "Còn phòng" else "Đã kín"
-        findViewById<MaterialButton>(R.id.btn_book).isEnabled = available
+        val availabilityStatus = findViewById<TextView>(R.id.tv_availability_status)
+        availabilityStatus.text = if (available) "Còn phòng" else "Đã kín"
+        availabilityStatus.setTextColor(getColor(if (available) android.R.color.holo_green_dark else android.R.color.holo_red_dark))
+        availabilityStatus.setBackgroundResource(if (available) R.drawable.bg_available_chip else R.drawable.bg_unavailable_chip)
+        findViewById<MaterialButton>(R.id.btn_book).apply {
+            isEnabled = available
+            text = if (available) "Đặt ngay" else "Không còn phòng"
+        }
     }
 
     private fun setupBookButton() {

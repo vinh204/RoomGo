@@ -18,7 +18,8 @@ import java.util.Locale
 class AdminBookingAdapter(
     private val bookings: MutableList<AdminBookingData>,
     private val onChangeStatusClick: (AdminBookingData) -> Unit,
-    private val onDeleteClick: (AdminBookingData) -> Unit
+    private val onDeleteClick: (AdminBookingData) -> Unit,
+    private val onDetailsClick: (AdminBookingData) -> Unit
 ) : RecyclerView.Adapter<AdminBookingAdapter.BookingViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookingViewHolder {
@@ -57,10 +58,13 @@ class AdminBookingAdapter(
         private val tvGuestCount: TextView = itemView.findViewById(R.id.tv_guest_count)
         private val tvTotalPrice: TextView = itemView.findViewById(R.id.tv_total_price)
         private val tvPaymentMethod: TextView = itemView.findViewById(R.id.tv_payment_method)
+        private val tvCustomerContact: TextView = itemView.findViewById(R.id.tv_customer_contact)
+        private val tvBookingMeta: TextView = itemView.findViewById(R.id.tv_booking_meta)
         private val btnChangeStatus: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.btn_change_status)
         private val btnDelete: ImageButton = itemView.findViewById(R.id.btn_delete)
 
         fun bind(booking: AdminBookingData) {
+            itemView.setOnClickListener { onDetailsClick(booking) }
             // Status badge
             tvStatusBadge.text = booking.status.uppercase()
             val color = getStatusColor(booking.status)
@@ -93,6 +97,10 @@ class AdminBookingAdapter(
                 else -> "Chưa thanh toán"
             }
             tvPaymentMethod.text = "💳 $paymentMethod"
+            tvCustomerContact.text = "✉ ${booking.user?.email ?: "N/A"}  •  ☎ ${booking.user?.phone ?: "N/A"}"
+            val nights = ((booking.checkOutDate - booking.checkInDate) / 86_400_000L).coerceAtLeast(1)
+            val created = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi", "VN")).format(Date(booking.createdAt))
+            tvBookingMeta.text = "$nights đêm • Slot: ${booking.slotId ?: "Cả phòng"} • Tạo lúc $created"
             
             // Actions
             btnChangeStatus.setOnClickListener {

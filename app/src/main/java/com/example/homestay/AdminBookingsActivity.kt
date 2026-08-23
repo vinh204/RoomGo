@@ -29,6 +29,7 @@ class AdminBookingsActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private var bookings = mutableListOf<AdminBookingData>()
     private var selectedStatus: String? = null
+    private var hasPaymentMethod: Boolean? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +54,8 @@ class AdminBookingsActivity : AppCompatActivity() {
         adapter = AdminBookingAdapter(
             bookings = bookings,
             onChangeStatusClick = { booking -> showChangeStatusDialog(booking) },
-            onDeleteClick = { booking -> showDeleteConfirmDialog(booking) }
+            onDeleteClick = { booking -> showDeleteConfirmDialog(booking) },
+            onDetailsClick = { booking -> showBookingDetails(booking) }
         )
         
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -66,6 +68,12 @@ class AdminBookingsActivity : AppCompatActivity() {
                 R.id.chip_completed -> "completed"
                 R.id.chip_cancelled -> "cancelled"
                 else -> null
+            }
+            applyBookingFilters()
+        }
+        findViewById<ChipGroup>(R.id.chip_payment_status).setOnCheckedStateChangeListener { _, ids ->
+            hasPaymentMethod = when (ids.firstOrNull()) {
+                R.id.chip_payment_set -> true; R.id.chip_payment_unset -> false; else -> null
             }
             applyBookingFilters()
         }
@@ -88,7 +96,7 @@ class AdminBookingsActivity : AppCompatActivity() {
                         checkInDate = booking.checkInDate, checkOutDate = booking.checkOutDate,
                         guestCount = booking.guestCount, totalPrice = booking.totalPrice,
                         status = booking.status, paymentMethod = booking.paymentMethod,
-                        createdAt = booking.createdAt
+                        createdAt = booking.createdAt, slotId = booking.slotId?.toString()
                     )
                 }
                 bookings.clear()
@@ -109,7 +117,8 @@ class AdminBookingsActivity : AppCompatActivity() {
         val filtered = bookings.filter { booking ->
             val matchesText = query.isBlank() || booking.user?.fullName.orEmpty().contains(query, true) ||
                 booking.user?.email.orEmpty().contains(query, true) || booking.room?.name.orEmpty().contains(query, true)
-            matchesText && (selectedStatus == null || booking.status == selectedStatus)
+            matchesText && (selectedStatus == null || booking.status == selectedStatus) &&
+                (hasPaymentMethod == null || (booking.paymentMethod != null) == hasPaymentMethod)
         }
         adapter.updateBookings(filtered)
         findViewById<View>(R.id.tv_empty).visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
@@ -138,6 +147,17 @@ class AdminBookingsActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .setNegativeButton("Hủy", null)
+            .show()
+    }
+
+    private fun showBookingDetails(booking: AdminBookingData) {
+        val formatDate = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale("vi", "VN"))
+        val nights = ((booking.checkOutDate - booking.checkInDate) / 86_400_000L).coerceAtLeast(1)
+        val price = java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN")).format(booking.totalPrice.toLong())
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Chi tiết booking #${booking.id}")
+            .setMessage("Phòng: ${booking.room?.name ?: "N/A"}\nKhách: ${booking.user?.fullName ?: "N/A"}\nEmail: ${booking.user?.email ?: "N/A"}\nĐiện thoại: ${booking.user?.phone ?: "N/A"}\n\nNhận phòng: ${formatDate.format(java.util.Date(booking.checkInDate))}\nTrả phòng: ${formatDate.format(java.util.Date(booking.checkOutDate))}\nThời gian lưu trú: $nights đêm\nSố khách: ${booking.guestCount}\nSlot: ${booking.slotId ?: "Cả phòng"}\n\nTổng tiền: $price đ\nThanh toán: ${booking.paymentMethod ?: "Chưa chọn"}\nTrạng thái: ${booking.status}\nNgày tạo: ${formatDate.format(java.util.Date(booking.createdAt))}")
+            .setPositiveButton("Đóng", null)
             .show()
     }
     

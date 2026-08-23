@@ -15,7 +15,9 @@ import java.util.Locale
 class AdminUserAdapter(
     private val users: MutableList<AdminUserData>,
     private val onDeleteClick: (AdminUserData) -> Unit,
-    private val onUnlockClick: (AdminUserData) -> Unit
+    private val onUnlockClick: (AdminUserData) -> Unit,
+    private val onDetailsClick: (AdminUserData) -> Unit,
+    private val onEditClick: (AdminUserData) -> Unit
 ) : RecyclerView.Adapter<AdminUserAdapter.UserViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {
@@ -50,11 +52,15 @@ class AdminUserAdapter(
         private val tvUserName: TextView = itemView.findViewById(R.id.tv_user_name)
         private val tvUserEmail: TextView = itemView.findViewById(R.id.tv_user_email)
         private val tvUserPhone: TextView = itemView.findViewById(R.id.tv_user_phone)
+        private val tvUserMetrics: TextView = itemView.findViewById(R.id.tv_user_metrics)
+        private val tvUserCreated: TextView = itemView.findViewById(R.id.tv_user_created)
         private val tvLockStatus: TextView = itemView.findViewById(R.id.tv_lock_status)
         private val btnUnlock: ImageButton = itemView.findViewById(R.id.btn_unlock)
+        private val btnEdit: ImageButton = itemView.findViewById(R.id.btn_edit)
         private val btnDelete: ImageButton = itemView.findViewById(R.id.btn_delete)
 
         fun bind(user: AdminUserData) {
+            itemView.setOnClickListener { onDetailsClick(user) }
             // Avatar: Lấy chữ cái đầu
             val firstChar = user.fullName.firstOrNull()?.uppercaseChar() ?: 'U'
             tvAvatar.text = firstChar.toString()
@@ -62,6 +68,11 @@ class AdminUserAdapter(
             tvUserName.text = user.fullName
             tvUserEmail.text = user.email
             tvUserPhone.text = user.phone
+            val money = java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN")).format(user.totalSpent.toLong())
+            tvUserMetrics.text = "${user.bookingCount} booking • Đã chi $money đ"
+            val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("vi", "VN"))
+            tvUserCreated.text = "Tham gia: ${dateFormat.format(java.util.Date(user.createdAt))}" +
+                (user.lastBookingAt?.let { " • Gần nhất: ${dateFormat.format(java.util.Date(it))}" } ?: "")
 
             // Hiển thị trạng thái locked
             // Log để debug
@@ -109,6 +120,8 @@ class AdminUserAdapter(
             btnUnlock.setOnClickListener {
                 onUnlockClick(user)
             }
+
+            btnEdit.setOnClickListener { onEditClick(user) }
 
             btnDelete.setOnClickListener {
                 onDeleteClick(user)

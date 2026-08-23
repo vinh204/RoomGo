@@ -147,6 +147,18 @@
             android:textColor="#999999"
             android:layout_marginBottom="12dp"/>
 
+        <TextView
+            android:id="@+id/tv_customer_contact"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp" android:textColor="@color/home_subtitle"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tv_booking_meta"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp" android:textColor="@color/home_subtitle"
+            android:textSize="13sp" />
+
         <!-- Actions -->
         <LinearLayout
             android:layout_width="match_parent"

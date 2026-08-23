@@ -13,6 +13,7 @@ import com.example.homestay.ui.viewmodel.AuthViewModel
 import com.example.homestay.ui.viewmodel.AuthViewModelFactory
 import com.example.homestay.utils.SessionManager
 import com.example.homestay.utils.AdminAuth
+import com.example.homestay.data.entity.User
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
@@ -37,7 +38,13 @@ class LoginActivity : AppCompatActivity() {
 
         sessionManager = SessionManager(this)
 
-        // Nếu đã đăng nhập, chuyển đến MainActivity
+        // Ưu tiên phiên quản trị để luôn mở đúng giao diện sau khi khởi động lại.
+        if (isAdminLoggedIn()) {
+            navigateToAdminDashboard()
+            return
+        }
+
+        // Nếu đã đăng nhập bằng tài khoản khách, chuyển đến MainActivity
         if (sessionManager.isLoggedIn()) {
             navigateToMain()
             return
@@ -80,8 +87,11 @@ class LoginActivity : AppCompatActivity() {
 
             if (email.equals(AdminAuth.EMAIL, ignoreCase = true)) {
                 if (AdminAuth.authenticate(email, password)) {
-                    saveAdminSession()
-                    navigateToAdminDashboard()
+                    lifecycleScope.launch {
+                        createAdminCustomerSession()
+                        saveAdminSession()
+                        navigateToAdminDashboard()
+                    }
                 } else {
                     Toast.makeText(this, "Tên đăng nhập hoặc mật khẩu không đúng", Toast.LENGTH_SHORT).show()
                 }
@@ -104,6 +114,7 @@ class LoginActivity : AppCompatActivity() {
                         val user = it.user
                         val mongoUserId = it.mongoUserId
                         if (user != null && mongoUserId != null) {
+                            clearAdminSession()
                             // Lưu session (bao gồm MongoDB ID để gọi API update)
                             sessionManager.saveSession(user.id, mongoUserId, user.email, user.fullName)
                             
@@ -144,6 +155,35 @@ class LoginActivity : AppCompatActivity() {
             .putString("admin_role", "super_admin")
             .putBoolean("is_admin_logged_in", true)
             .apply()
+    }
+
+    private suspend fun createAdminCustomerSession() {
+        val repository = application.repository
+        val adminUser = repository.getUserByEmail(AdminAuth.EMAIL) ?: run {
+            val id = repository.insertUser(
+                User(
+                    email = AdminAuth.EMAIL,
+                    phone = "admin-local",
+                    password = "AdminLocalSession@1",
+                    fullName = "Administrator"
+                )
+            )
+            repository.getUserById(id) ?: return
+        }
+        sessionManager.saveSession(
+            userId = adminUser.id,
+            mongoUserId = "local-admin",
+            email = adminUser.email,
+            name = adminUser.fullName
+        )
+    }
+
+    private fun isAdminLoggedIn(): Boolean =
+        getSharedPreferences("AdminSession", MODE_PRIVATE)
+            .getBoolean("is_admin_logged_in", false)
+
+    private fun clearAdminSession() {
+        getSharedPreferences("AdminSession", MODE_PRIVATE).edit().clear().apply()
     }
 
     private fun navigateToAdminDashboard() {

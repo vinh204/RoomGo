@@ -28,6 +28,14 @@
             android:paddingHorizontal="16dp"
             android:singleLine="true" />
 
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_room_status" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:paddingHorizontal="8dp" app:singleSelection="true">
+            <com.google.android.material.chip.Chip android:id="@+id/chip_rooms_all" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Tất cả" />
+            <com.google.android.material.chip.Chip android:id="@+id/chip_rooms_active" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Đang mở" />
+            <com.google.android.material.chip.Chip android:id="@+id/chip_rooms_hidden" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tạm ẩn" />
+        </com.google.android.material.chip.ChipGroup>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView

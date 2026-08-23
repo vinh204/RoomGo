@@ -69,6 +69,18 @@
                 android:textColor="#666666"
                 android:layout_marginTop="2dp"/>
 
+            <TextView
+                android:id="@+id/tv_user_metrics"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="5dp" android:textColor="@color/home_primary"
+                android:textSize="12sp" android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_user_created"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="3dp" android:textColor="@color/home_subtitle"
+                android:textSize="12sp" />
+
             <!-- Lock Status -->
             <TextView
                 android:id="@+id/tv_lock_status"
@@ -86,6 +98,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
+
+            <ImageButton
+                android:id="@+id/btn_edit"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Chỉnh sửa"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="@color/home_primary" />
 
             <!-- Unlock Button -->
             <ImageButton

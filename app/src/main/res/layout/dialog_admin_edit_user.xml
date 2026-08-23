@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="24dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Chỉnh sửa người dùng" android:textColor="@color/home_title"
+        android:textSize="20sp" android:textStyle="bold" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="18dp" android:hint="Họ và tên" app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_admin_user_name"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" android:hint="Email" app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_admin_user_email"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:inputType="textEmailAddress" android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" android:hint="Số điện thoại" app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_admin_user_phone"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:inputType="phone" android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" android:hint="Mật khẩu mới (để trống nếu không đổi)"
+        app:boxBackgroundMode="outline" app:endIconMode="password_toggle">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_admin_user_password"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:inputType="textPassword" android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="20dp" android:gravity="end" android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hủy"
+            android:textAllCaps="false" app:backgroundTint="@android:color/transparent" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_save"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginStart="10dp" android:text="Lưu thay đổi" android:textAllCaps="false"
+            android:textColor="@android:color/white" app:backgroundTint="@color/home_primary" />
+    </LinearLayout>
+</LinearLayout>

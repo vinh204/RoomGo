@@ -122,12 +122,22 @@
                 android:text="1"/>
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Image URL -->
+        <ImageView
+            android:id="@+id/iv_room_image_preview"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/home_divider"
+            android:contentDescription="Xem trước ảnh phòng"
+            android:scaleType="centerCrop"
+            android:src="@drawable/app_logo" />
+
+        <!-- Ảnh được chọn từ thiết bị -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:hint="Image URL (optional)"
+            android:hint="Ảnh đã chọn"
             app:boxBackgroundMode="outline"
             app:boxCornerRadiusBottomEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
@@ -139,8 +149,63 @@
                 android:id="@+id/et_room_image_url"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textUri"/>
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:hint="Chưa chọn ảnh" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_select_room_image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Chọn ảnh từ thiết bị"
+            android:textAllCaps="false"
+            android:textColor="@color/home_primary"
+            app:backgroundTint="@android:color/transparent"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/home_primary"
+            app:strokeWidth="1dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:hint="Loại phòng" app:boxBackgroundMode="outline">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_room_type"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:hint="Khu vực / thành phố" app:boxBackgroundMode="outline">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_room_location"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:hint="Địa chỉ chi tiết" app:boxBackgroundMode="outline">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_room_address"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:hint="Diện tích (m²)" app:boxBackgroundMode="outline">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_room_area"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:hint="Tiện nghi (phân cách bằng dấu phẩy)" app:boxBackgroundMode="outline">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_room_amenities"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="2" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switch_room_available" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="14dp"
+            android:checked="true" android:text="Cho phép khách đặt phòng" />
 
         <!-- Buttons -->
         <LinearLayout

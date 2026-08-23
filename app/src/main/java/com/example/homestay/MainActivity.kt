@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
     
     private var roomAdapter: RoomAdapter? = null
     private var featuredRoomAdapter: RoomAdapter? = null
-    private var recentRoomAdapter: RoomAdapter? = null
     private var favoriteAdapter: RoomAdapter? = null
     private var bookingAdapter: BookingAdapter? = null
     private var searchResultsJob: Job? = null
@@ -402,8 +401,6 @@ class MainActivity : AppCompatActivity() {
         val emptyView = contentContainer.findViewById<TextView>(R.id.tv_empty_rooms)
         val progressRooms = contentContainer.findViewById<android.view.View>(R.id.progress_rooms)
         val featuredRecycler = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_featured_rooms)
-        val recentRecycler = contentContainer.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_recent_rooms)
-        val recentSection = contentContainer.findViewById<android.view.View>(R.id.section_recent_rooms)
         val retryRooms = contentContainer.findViewById<MaterialButton>(R.id.btn_retry_rooms)
 
         tvGreeting?.text = sessionManager.getUserName()
@@ -435,7 +432,6 @@ class MainActivity : AppCompatActivity() {
                 roomAdapter = RoomAdapter(
                     onRoomClick = { room ->
                         // Navigate to room detail
-                        rememberViewedRoom(room.id)
                         val intent = Intent(this@MainActivity, RoomDetailActivity::class.java)
                         intent.putExtra("room_id", room.id)
                         startActivity(intent)
@@ -471,7 +467,6 @@ class MainActivity : AppCompatActivity() {
             
             fun discoveryAdapter() = RoomAdapter(
                 onRoomClick = { room ->
-                    rememberViewedRoom(room.id)
                     startActivity(Intent(this@MainActivity, RoomDetailActivity::class.java).putExtra("room_id", room.id))
                 },
                 onFavoriteClick = { room, _ ->
@@ -481,20 +476,14 @@ class MainActivity : AppCompatActivity() {
                 getFavoriteStatus = { id -> favoriteStatusMap[id] ?: false }
             )
             featuredRoomAdapter = discoveryAdapter()
-            recentRoomAdapter = discoveryAdapter()
             featuredRecycler?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
             featuredRecycler?.adapter = featuredRoomAdapter
-            recentRecycler?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-            recentRecycler?.adapter = recentRoomAdapter
 
             homeSectionsJob?.cancel()
             homeSectionsJob = lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel.availableRooms.collect { rooms ->
                         featuredRoomAdapter?.submitList(rooms.sortedByDescending { it.rating }.take(3))
-                        val recentRooms = getViewedRoomIds().mapNotNull { id -> rooms.find { it.id == id } }
-                        recentRoomAdapter?.submitList(recentRooms)
-                        recentSection?.visibility = if (recentRooms.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
                     }
                 }
             }
@@ -812,11 +801,22 @@ class MainActivity : AppCompatActivity() {
         val tvMembership = contentContainer.findViewById<TextView>(R.id.tv_membership)
         val btnEditProfile = contentContainer.findViewById<MaterialButton>(R.id.btn_edit_profile)
         val btnLogout = contentContainer.findViewById<MaterialButton>(R.id.btn_logout)
+        val btnBackToAdmin = contentContainer.findViewById<MaterialButton>(R.id.btn_back_to_admin)
+        val adminPrefs = getSharedPreferences("AdminSession", MODE_PRIVATE)
+        val isAdminPreview = adminPrefs.getBoolean("is_admin_logged_in", false)
 
         val userId = sessionManager.getUserId()
         val mongoUserId = sessionManager.getMongoUserId()
         
-        if (userId != -1L) {
+        if (isAdminPreview) {
+            tvUserName?.text = adminPrefs.getString("admin_fullname", "Administrator")
+            tvUserEmail?.text = adminPrefs.getString("admin_username", "admin@gmail.com")
+            rowUserPhone?.visibility = android.view.View.GONE
+            tvMembership?.text = "Quản trị viên"
+            btnEditProfile?.visibility = android.view.View.GONE
+            btnLogout?.text = "Đăng xuất admin"
+            btnBackToAdmin?.visibility = android.view.View.VISIBLE
+        } else if (userId != -1L) {
             lifecycleScope.launch {
                 // Nếu có MongoDB ID, sync dữ liệu mới nhất từ backend
                 if (mongoUserId != null) {
@@ -871,10 +871,20 @@ class MainActivity : AppCompatActivity() {
 
         // Xử lý đăng xuất
         btnLogout?.setOnClickListener {
-            if (sessionManager.isLoggedIn()) {
+            if (isAdminPreview) {
+                adminPrefs.edit().clear().apply()
+                sessionManager.clearSession()
+            } else if (sessionManager.isLoggedIn()) {
                 sessionManager.clearSession()
             }
             openLogin(null)
+        }
+
+        btnBackToAdmin?.setOnClickListener {
+            startActivity(Intent(this, AdminDashboardActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
         }
     }
 
@@ -882,23 +892,6 @@ class MainActivity : AppCompatActivity() {
         message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
         startActivity(Intent(this, LoginActivity::class.java))
     }
-
-    private fun rememberViewedRoom(roomId: Long) {
-        val ids = getViewedRoomIds().toMutableList().apply {
-            remove(roomId)
-            add(0, roomId)
-        }.take(5)
-        getSharedPreferences("RecentRooms", MODE_PRIVATE).edit()
-            .putString("room_ids", ids.joinToString(","))
-            .apply()
-    }
-
-    private fun getViewedRoomIds(): List<Long> =
-        getSharedPreferences("RecentRooms", MODE_PRIVATE)
-            .getString("room_ids", "")
-            .orEmpty()
-            .split(',')
-            .mapNotNull { it.toLongOrNull() }
 
     private fun showEditProfileDialog(userId: Long) {
         val dialog = BottomSheetDialog(this)

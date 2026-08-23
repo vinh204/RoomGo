@@ -14,7 +14,14 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
 
         Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
+            val isAdminLoggedIn = getSharedPreferences("AdminSession", MODE_PRIVATE)
+                .getBoolean("is_admin_logged_in", false)
+            val destination = if (isAdminLoggedIn) {
+                AdminDashboardActivity::class.java
+            } else {
+                MainActivity::class.java
+            }
+            startActivity(Intent(this, destination))
             finish()
         }, 1000)
     }
