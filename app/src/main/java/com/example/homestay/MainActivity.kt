@@ -11,6 +11,8 @@ import androidx.core.view.WindowInsetsCompat
 import android.util.Log
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.LinearLayout
@@ -22,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.homestay.ui.RoomDetailActivity
 import com.example.homestay.ui.adapter.BookingAdapter
+import com.example.homestay.ui.adapter.BookingWithRoom
 import com.example.homestay.ui.adapter.RoomAdapter
 import com.example.homestay.ui.viewmodel.RoomViewModel
 import com.example.homestay.ui.viewmodel.RoomViewModelFactory
@@ -32,6 +35,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.Job
@@ -90,6 +94,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize currentUserId
         currentUserId = sessionManager.getUserId()
+        setupToolbar()
 
         // Sync rooms from backend API
         refreshRooms()
@@ -383,6 +388,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupToolbar() {
+        findViewById<MaterialToolbar>(R.id.toolbar).setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_notifications -> {
+                    Toast.makeText(this, "Bạn chưa có thông báo mới", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
     private fun loadContent(@LayoutRes layoutId: Int) {
         contentContainer.removeAllViews()
         layoutInflater.inflate(layoutId, contentContainer, true)
@@ -530,8 +547,6 @@ class MainActivity : AppCompatActivity() {
         val tvGuestCount = contentContainer.findViewById<TextView>(R.id.tv_guest_count)
         val btnSort = contentContainer.findViewById<MaterialButton>(R.id.btn_sort)
         val btnClearFilters = contentContainer.findViewById<MaterialButton>(R.id.btn_clear_filters)
-        val sliderMaxPrice = contentContainer.findViewById<com.google.android.material.slider.Slider>(R.id.slider_max_price)
-        val tvPriceFilter = contentContainer.findViewById<TextView>(R.id.tv_price_filter)
 
         // Setup search text watcher
         etSearch?.addTextChangedListener(object : TextWatcher {
@@ -548,17 +563,11 @@ class MainActivity : AppCompatActivity() {
         btnGuestMinus?.setOnClickListener { updateGuestCount(-1) }
         btnGuestPlus?.setOnClickListener { updateGuestCount(1) }
         btnSort?.setOnClickListener { viewModel.cycleSortOrder() }
-        sliderMaxPrice?.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) viewModel.setMaxPrice(value.toDouble())
-            val price = java.text.NumberFormat.getNumberInstance(Locale("vi", "VN")).format(value.toLong())
-            tvPriceFilter?.text = "Giá tối đa: $price đ / đêm"
-        }
         btnClearFilters?.setOnClickListener {
             viewModel.clearSearchFilters()
             etSearch?.setText("")
             tvCheckInDate?.text = "Chọn ngày"
             tvCheckOutDate?.text = "Chọn ngày"
-            sliderMaxPrice?.value = 3_000_000f
         }
 
         contentContainer.findViewById<MaterialButton>(R.id.btn_retry_rooms)?.setOnClickListener {
@@ -754,11 +763,8 @@ class MainActivity : AppCompatActivity() {
 
             // Tạo adapter nếu chưa có hoặc đã reset
             if (bookingAdapter == null) {
-                bookingAdapter = BookingAdapter { booking ->
-                    // Navigate to booking detail hoặc room detail
-                    val intent = Intent(this@MainActivity, RoomDetailActivity::class.java)
-                    intent.putExtra("room_id", booking.roomId)
-                    startActivity(intent)
+                bookingAdapter = BookingAdapter { bookingWithRoom ->
+                    showBookingDetail(bookingWithRoom)
                 }
             }
 
@@ -1060,6 +1066,70 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        dialog.show()
+    }
+
+    private fun showBookingDetail(item: BookingWithRoom) {
+        val booking = item.booking
+        val room = item.room
+        val dialog = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.dialog_booking_detail, null)
+        dialog.setContentView(view)
+
+        val statusText = when (booking.status.lowercase()) {
+            "pending" -> "Chờ xác nhận"
+            "confirmed" -> "Đã xác nhận"
+            "cancelled" -> "Đã hủy"
+            "completed" -> "Hoàn thành"
+            else -> booking.status
+        }
+        val statusColor = when (booking.status.lowercase()) {
+            "pending" -> Color.parseColor("#F59E0B")
+            "confirmed" -> Color.parseColor("#16A34A")
+            "cancelled" -> Color.parseColor("#DC2626")
+            "completed" -> Color.parseColor("#2563EB")
+            else -> Color.parseColor("#6B7280")
+        }
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
+        val dateTimeFormat = SimpleDateFormat("dd/MM/yyyy, HH:mm", Locale("vi", "VN"))
+        val formatter = java.text.NumberFormat.getNumberInstance(Locale("vi", "VN"))
+        val nights = ((booking.checkOutDate - booking.checkInDate) / 86_400_000L).coerceAtLeast(1L)
+        val paymentText = when (booking.paymentMethod) {
+            "qr_code" -> "Chuyển khoản QR"
+            "pay_on_site" -> "Thanh toán khi nhận phòng"
+            else -> "Chưa chọn phương thức"
+        }
+
+        view.findViewById<TextView>(R.id.tv_detail_booking_code).text =
+            "Mã đặt chỗ #RG${booking.id.toString().padStart(8, '0')}"
+        view.findViewById<TextView>(R.id.tv_detail_status).apply {
+            text = statusText
+            backgroundTintList = ColorStateList.valueOf(statusColor)
+        }
+        view.findViewById<TextView>(R.id.tv_detail_room_name).text = room?.name ?: "Phòng không còn tồn tại"
+        view.findViewById<TextView>(R.id.tv_detail_location).text = when {
+            room == null -> "Không có thông tin địa chỉ"
+            room.address.isNotBlank() -> "${room.location} · ${room.address}"
+            else -> room.location
+        }
+        view.findViewById<TextView>(R.id.tv_detail_check_in).text = dateFormat.format(java.util.Date(booking.checkInDate))
+        view.findViewById<TextView>(R.id.tv_detail_check_out).text = dateFormat.format(java.util.Date(booking.checkOutDate))
+        view.findViewById<TextView>(R.id.tv_detail_nights).text = "$nights đêm"
+        view.findViewById<TextView>(R.id.tv_detail_guests).text = "Khách lưu trú: ${booking.guestCount} người · 1 phòng"
+        view.findViewById<TextView>(R.id.tv_detail_payment).text = "Thanh toán: $paymentText"
+        view.findViewById<TextView>(R.id.tv_detail_created).text =
+            "Thời gian đặt: ${dateTimeFormat.format(java.util.Date(booking.createdAt))}"
+        view.findViewById<TextView>(R.id.tv_detail_total).text = "${formatter.format(booking.totalPrice.toLong())} đ"
+
+        view.findViewById<MaterialButton>(R.id.btn_detail_view_room).apply {
+            isEnabled = room != null
+            alpha = if (room != null) 1f else 0.5f
+            setOnClickListener {
+                dialog.dismiss()
+                startActivity(Intent(this@MainActivity, RoomDetailActivity::class.java).putExtra("room_id", booking.roomId))
+            }
+        }
+        view.findViewById<MaterialButton>(R.id.btn_detail_close).setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
 }

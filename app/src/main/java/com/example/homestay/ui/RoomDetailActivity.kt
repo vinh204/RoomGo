@@ -129,8 +129,8 @@ class RoomDetailActivity : AppCompatActivity() {
         
         // Load image from URL using Coil
         findViewById<ImageView>(R.id.img_room).load(room.imageUrl) {
-            placeholder(R.drawable.app_logo) // Placeholder while loading
-            error(R.drawable.app_logo) // Error image if load fails
+            placeholder(R.drawable.ic_room_placeholder)
+            error(R.drawable.ic_room_placeholder)
             crossfade(true) // Smooth transition
             listener(
                 onStart = { 

@@ -236,25 +236,6 @@
                         android:textSize="20sp" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_price_filter"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Giá tối đa: 3.000.000 đ / đêm"
-                    android:textColor="@color/home_text"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/slider_max_price"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:value="3000000"
-                    android:valueFrom="300000"
-                    android:valueTo="3000000"
-                    android:stepSize="100000" />
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_search"
                     android:layout_width="match_parent"

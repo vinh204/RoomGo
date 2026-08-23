@@ -44,8 +44,8 @@ class AdminRoomsActivity : AppCompatActivity() {
         }
         activeImageField?.setText(uri.toString())
         activeImagePreview?.load(uri) {
-            placeholder(R.drawable.app_logo)
-            error(R.drawable.app_logo)
+            placeholder(R.drawable.ic_room_placeholder)
+            error(R.drawable.ic_room_placeholder)
             crossfade(true)
         }
     }
@@ -207,8 +207,8 @@ class AdminRoomsActivity : AppCompatActivity() {
         etMaxSlots.setText(room.maxSlots.toString())
         etImageUrl.setText(room.imageUrl)
         imagePreview.load(room.imageUrl) {
-            placeholder(R.drawable.app_logo)
-            error(R.drawable.app_logo)
+            placeholder(R.drawable.ic_room_placeholder)
+            error(R.drawable.ic_room_placeholder)
         }
         btnSelectImage.setOnClickListener {
             activeImageField = etImageUrl

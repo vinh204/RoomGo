@@ -72,13 +72,13 @@ class AdminRoomAdapter(
             // Load image from URL using Coil
             if (room.imageUrl.isNotEmpty()) {
                 ivRoomImage.load(room.imageUrl) {
-                    placeholder(R.drawable.app_logo) // Placeholder while loading
-                    error(R.drawable.app_logo) // Error image if load fails
+                    placeholder(R.drawable.ic_room_placeholder)
+                    error(R.drawable.ic_room_placeholder)
                     crossfade(true) // Smooth transition
                 }
             } else {
                 // Nếu không có imageUrl, hiển thị placeholder
-                ivRoomImage.setImageResource(R.drawable.app_logo)
+                ivRoomImage.setImageResource(R.drawable.ic_room_placeholder)
             }
 
             btnEdit.setOnClickListener {

@@ -130,7 +130,7 @@
             android:background="@color/home_divider"
             android:contentDescription="Xem trước ảnh phòng"
             android:scaleType="centerCrop"
-            android:src="@drawable/app_logo" />
+            android:src="@drawable/ic_room_placeholder" />
 
         <!-- Ảnh được chọn từ thiết bị -->
         <com.google.android.material.textfield.TextInputLayout

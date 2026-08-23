@@ -21,7 +21,7 @@ data class BookingWithRoom(
 )
 
 class BookingAdapter(
-    private val onBookingClick: (Booking) -> Unit
+    private val onBookingClick: (BookingWithRoom) -> Unit
 ) : ListAdapter<BookingWithRoom, BookingAdapter.BookingViewHolder>(BookingDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookingViewHolder {
@@ -87,7 +87,7 @@ class BookingAdapter(
             tvTotalPrice.text = "$formattedPrice đ"
 
             itemView.setOnClickListener {
-                onBookingClick(booking)
+                onBookingClick(bookingWithRoom)
             }
         }
     }
