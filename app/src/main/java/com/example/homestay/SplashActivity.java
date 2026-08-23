@@ -1,3 +1,18 @@
 package com.example.homestay;
-import android.content.Intent;import android.os.Bundle;import androidx.appcompat.app.AppCompatActivity;import androidx.core.splashscreen.SplashScreen;
-public class SplashActivity extends AppCompatActivity{@Override protected void onCreate(Bundle state){SplashScreen.Companion.installSplashScreen(this);super.onCreate(state);boolean admin=getSharedPreferences("AdminSession",MODE_PRIVATE).getBoolean("is_admin_logged_in",false);startActivity(new Intent(this,admin?AdminDashboardActivity.class:MainActivity.class));finish();}}
+
+import android.content.Intent;
+import android.os.Bundle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.splashscreen.SplashScreen;
+
+public class SplashActivity extends AppCompatActivity {
+  @Override
+  protected void onCreate(Bundle state) {
+    SplashScreen.Companion.installSplashScreen(this);
+    super.onCreate(state);
+    boolean admin =
+        getSharedPreferences("AdminSession", MODE_PRIVATE).getBoolean("is_admin_logged_in", false);
+    startActivity(new Intent(this, admin ? AdminDashboardActivity.class : MainActivity.class));
+    finish();
+  }
+}

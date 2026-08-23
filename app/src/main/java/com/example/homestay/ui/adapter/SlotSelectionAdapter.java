@@ -1,3 +1,106 @@
 package com.example.homestay.ui.adapter;
-import android.view.*;import android.widget.*;import androidx.recyclerview.widget.RecyclerView;import com.example.homestay.R;import com.example.homestay.data.entity.Slot;import com.google.android.material.card.MaterialCardView;import java.text.NumberFormat;import java.util.*;
-public class SlotSelectionAdapter extends RecyclerView.Adapter<SlotSelectionAdapter.Holder>{public interface Listener{void onSelected(Slot slot);}private final Listener callback;private Long selectedSlotId;private List<Slot> items=Collections.emptyList();public SlotSelectionAdapter(Listener c){callback=c;}public void submitList(List<Slot> v){items=v;notifyDataSetChanged();}@Override public int getItemCount(){return items.size();}@Override public Holder onCreateViewHolder(ViewGroup p,int t){return new Holder(LayoutInflater.from(p.getContext()).inflate(R.layout.item_slot_selection,p,false));}@Override public void onBindViewHolder(Holder h,int p){h.bind(items.get(p));}public class Holder extends RecyclerView.ViewHolder{final TextView name,number,price,status;final ImageView selected;final MaterialCardView card;Holder(View v){super(v);name=v.findViewById(R.id.tv_slot_name);number=v.findViewById(R.id.tv_slot_number);price=v.findViewById(R.id.tv_slot_price);status=v.findViewById(R.id.tv_slot_status);selected=v.findViewById(R.id.img_selected);card=(MaterialCardView)v;}void bind(Slot s){name.setText(s.getSlotName());number.setText("Slot #"+s.getSlotNumber());Double value=s.getPrice();if(value!=null&&value>0){price.setText(NumberFormat.getNumberInstance(new Locale("vi","VN")).format(value.longValue())+" đ / đêm");price.setVisibility(View.VISIBLE);}else price.setVisibility(View.GONE);status.setText(s.isAvailable()?"Có sẵn":"Đã đặt");status.setTextColor(itemView.getContext().getColor(s.isAvailable()?R.color.home_primary:android.R.color.darker_gray));itemView.setEnabled(s.isAvailable());itemView.setAlpha(s.isAvailable()?1f:.5f);boolean active=Objects.equals(selectedSlotId,s.getId());selected.setVisibility(active?View.VISIBLE:View.GONE);card.setStrokeColor(itemView.getContext().getColor(active?R.color.home_primary:R.color.home_divider));itemView.setOnClickListener(v->{if(s.isAvailable()){if(Objects.equals(selectedSlotId,s.getId())){selectedSlotId=null;callback.onSelected(null);}else{selectedSlotId=s.getId();callback.onSelected(s);}notifyDataSetChanged();}});}}public Long getSelectedSlotId(){return selectedSlotId;}public void clearSelection(){selectedSlotId=null;notifyDataSetChanged();}}
+
+import android.view.*;
+import android.widget.*;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.homestay.R;
+import com.example.homestay.data.entity.Slot;
+import com.google.android.material.card.MaterialCardView;
+import java.text.NumberFormat;
+import java.util.*;
+
+public class SlotSelectionAdapter extends RecyclerView.Adapter<SlotSelectionAdapter.Holder> {
+  public interface Listener {
+    void onSelected(Slot slot);
+  }
+
+  private final Listener callback;
+  private Long selectedSlotId;
+  private List<Slot> items = Collections.emptyList();
+
+  public SlotSelectionAdapter(Listener c) {
+    callback = c;
+  }
+
+  public void submitList(List<Slot> v) {
+    items = v;
+    notifyDataSetChanged();
+  }
+
+  @Override
+  public int getItemCount() {
+    return items.size();
+  }
+
+  @Override
+  public Holder onCreateViewHolder(ViewGroup p, int t) {
+    return new Holder(
+        LayoutInflater.from(p.getContext()).inflate(R.layout.item_slot_selection, p, false));
+  }
+
+  @Override
+  public void onBindViewHolder(Holder h, int p) {
+    h.bind(items.get(p));
+  }
+
+  public class Holder extends RecyclerView.ViewHolder {
+    final TextView name, number, price, status;
+    final ImageView selected;
+    final MaterialCardView card;
+
+    Holder(View v) {
+      super(v);
+      name = v.findViewById(R.id.tv_slot_name);
+      number = v.findViewById(R.id.tv_slot_number);
+      price = v.findViewById(R.id.tv_slot_price);
+      status = v.findViewById(R.id.tv_slot_status);
+      selected = v.findViewById(R.id.img_selected);
+      card = (MaterialCardView) v;
+    }
+
+    void bind(Slot s) {
+      name.setText(s.getSlotName());
+      number.setText("Slot #" + s.getSlotNumber());
+      Double value = s.getPrice();
+      if (value != null && value > 0) {
+        price.setText(
+            NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(value.longValue())
+                + " đ / đêm");
+        price.setVisibility(View.VISIBLE);
+      } else price.setVisibility(View.GONE);
+      status.setText(s.isAvailable() ? "Có sẵn" : "Đã đặt");
+      status.setTextColor(
+          itemView
+              .getContext()
+              .getColor(s.isAvailable() ? R.color.home_primary : android.R.color.darker_gray));
+      itemView.setEnabled(s.isAvailable());
+      itemView.setAlpha(s.isAvailable() ? 1f : .5f);
+      boolean active = Objects.equals(selectedSlotId, s.getId());
+      selected.setVisibility(active ? View.VISIBLE : View.GONE);
+      card.setStrokeColor(
+          itemView.getContext().getColor(active ? R.color.home_primary : R.color.home_divider));
+      itemView.setOnClickListener(
+          v -> {
+            if (s.isAvailable()) {
+              if (Objects.equals(selectedSlotId, s.getId())) {
+                selectedSlotId = null;
+                callback.onSelected(null);
+              } else {
+                selectedSlotId = s.getId();
+                callback.onSelected(s);
+              }
+              notifyDataSetChanged();
+            }
+          });
+    }
+  }
+
+  public Long getSelectedSlotId() {
+    return selectedSlotId;
+  }
+
+  public void clearSelection() {
+    selectedSlotId = null;
+    notifyDataSetChanged();
+  }
+}

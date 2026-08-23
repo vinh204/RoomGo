@@ -1,1 +1,94 @@
-package com.example.homestay.data.model;import androidx.annotation.Nullable;public final class AdminUserData{private final String id,email,phone,fullName;private final long createdAt;private final Integer failedLoginAttempts;private final Boolean locked,permanent;private final Long lockedUntil,secondsRemaining,lastBookingAt;private final int bookingCount;private final double totalSpent;public AdminUserData(String id,String e,String p,String n,long c,@Nullable Integer f,@Nullable Boolean l,@Nullable Boolean permanent,@Nullable Long until,@Nullable Long seconds,int count,double spent,@Nullable Long last){this.id=id;email=e;phone=p;fullName=n;createdAt=c;failedLoginAttempts=f;locked=l;this.permanent=permanent;lockedUntil=until;secondsRemaining=seconds;bookingCount=count;totalSpent=spent;lastBookingAt=last;}public String getId(){return id;}public String getEmail(){return email;}public String getPhone(){return phone;}public String getFullName(){return fullName;}public long getCreatedAt(){return createdAt;}public Integer getFailedLoginAttempts(){return failedLoginAttempts;}public Boolean getLocked(){return locked;}public Boolean getPermanent(){return permanent;}public Long getLockedUntil(){return lockedUntil;}public Long getSecondsRemaining(){return secondsRemaining;}public int getBookingCount(){return bookingCount;}public double getTotalSpent(){return totalSpent;}public Long getLastBookingAt(){return lastBookingAt;}}
+package com.example.homestay.data.model;
+
+import androidx.annotation.Nullable;
+
+public final class AdminUserData {
+  private final String id, email, phone, fullName;
+  private final long createdAt;
+  private final Integer failedLoginAttempts;
+  private final Boolean locked, permanent;
+  private final Long lockedUntil, secondsRemaining, lastBookingAt;
+  private final int bookingCount;
+  private final double totalSpent;
+
+  public AdminUserData(
+      String id,
+      String e,
+      String p,
+      String n,
+      long c,
+      @Nullable Integer f,
+      @Nullable Boolean l,
+      @Nullable Boolean permanent,
+      @Nullable Long until,
+      @Nullable Long seconds,
+      int count,
+      double spent,
+      @Nullable Long last) {
+    this.id = id;
+    email = e;
+    phone = p;
+    fullName = n;
+    createdAt = c;
+    failedLoginAttempts = f;
+    locked = l;
+    this.permanent = permanent;
+    lockedUntil = until;
+    secondsRemaining = seconds;
+    bookingCount = count;
+    totalSpent = spent;
+    lastBookingAt = last;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public String getPhone() {
+    return phone;
+  }
+
+  public String getFullName() {
+    return fullName;
+  }
+
+  public long getCreatedAt() {
+    return createdAt;
+  }
+
+  public Integer getFailedLoginAttempts() {
+    return failedLoginAttempts;
+  }
+
+  public Boolean getLocked() {
+    return locked;
+  }
+
+  public Boolean getPermanent() {
+    return permanent;
+  }
+
+  public Long getLockedUntil() {
+    return lockedUntil;
+  }
+
+  public Long getSecondsRemaining() {
+    return secondsRemaining;
+  }
+
+  public int getBookingCount() {
+    return bookingCount;
+  }
+
+  public double getTotalSpent() {
+    return totalSpent;
+  }
+
+  public Long getLastBookingAt() {
+    return lastBookingAt;
+  }
+}

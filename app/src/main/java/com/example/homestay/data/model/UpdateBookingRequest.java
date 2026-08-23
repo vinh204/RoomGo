@@ -1,1 +1,20 @@
-package com.example.homestay.data.model;import androidx.annotation.Nullable;public final class UpdateBookingRequest{private final String status,paymentMethod;public UpdateBookingRequest(@Nullable String s,@Nullable String p){status=s;paymentMethod=p;}public String getStatus(){return status;}public String getPaymentMethod(){return paymentMethod;}}
+package com.example.homestay.data.model;
+
+import androidx.annotation.Nullable;
+
+public final class UpdateBookingRequest {
+  private final String status, paymentMethod;
+
+  public UpdateBookingRequest(@Nullable String s, @Nullable String p) {
+    status = s;
+    paymentMethod = p;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public String getPaymentMethod() {
+    return paymentMethod;
+  }
+}

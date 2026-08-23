@@ -1,1 +1,24 @@
-package com.example.homestay.data.model;public final class AdminBookingRoom{private final String id,name;private final double price;public AdminBookingRoom(String i,String n,double p){id=i;name=n;price=p;}public String getId(){return id;}public String getName(){return name;}public double getPrice(){return price;}}
+package com.example.homestay.data.model;
+
+public final class AdminBookingRoom {
+  private final String id, name;
+  private final double price;
+
+  public AdminBookingRoom(String i, String n, double p) {
+    id = i;
+    name = n;
+    price = p;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public double getPrice() {
+    return price;
+  }
+}

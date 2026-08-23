@@ -1,5 +1,5 @@
 {
-  // Java Language Server Configuration
+  // Java Language Server  Configuration
   // Set this to the path of your JDK 17 or higher installation
   // Example: "java.jdt.ls.java.home": "C:\\Program Files\\Java\\jdk-17"
   // Or if using Android Studio's bundled JDK: "java.jdt.ls.java.home": "C:\\Program Files\\Android\\Android Studio\\jbr"

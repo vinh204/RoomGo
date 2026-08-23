@@ -1,1 +1,35 @@
-package com.example.homestay.data.dao;import androidx.room.*;import com.example.homestay.data.entity.Room;import java.util.List;@Dao public interface RoomDao{@Query("SELECT * FROM rooms ORDER BY id ASC")List<Room> getAllRoomsNow();@Query("SELECT * FROM rooms WHERE id=:id")Room getRoomById(long id);@Query("SELECT * FROM rooms WHERE mongoId=:id")Room getRoomByMongoId(String id);@Insert(onConflict=OnConflictStrategy.REPLACE)long insertRoom(Room r);@Insert(onConflict=OnConflictStrategy.REPLACE)void insertRooms(List<Room> r);@Update void updateRoom(Room r);@Query("UPDATE rooms SET isFeatured=0")void clearFeaturedRooms();@Delete void deleteRoom(Room r);@Query("DELETE FROM rooms")void deleteAllRooms();}
+package com.example.homestay.data.dao;
+
+import androidx.room.*;
+import com.example.homestay.data.entity.Room;
+import java.util.List;
+
+@Dao
+public interface RoomDao {
+  @Query("SELECT * FROM rooms ORDER BY id ASC")
+  List<Room> getAllRoomsNow();
+
+  @Query("SELECT * FROM rooms WHERE id=:id")
+  Room getRoomById(long id);
+
+  @Query("SELECT * FROM rooms WHERE mongoId=:id")
+  Room getRoomByMongoId(String id);
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  long insertRoom(Room r);
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  void insertRooms(List<Room> r);
+
+  @Update
+  void updateRoom(Room r);
+
+  @Query("UPDATE rooms SET isFeatured=0")
+  void clearFeaturedRooms();
+
+  @Delete
+  void deleteRoom(Room r);
+
+  @Query("DELETE FROM rooms")
+  void deleteAllRooms();
+}

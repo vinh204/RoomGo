@@ -1,1 +1,62 @@
-package com.example.homestay.data.model;import androidx.annotation.Nullable;public final class CreateBookingRequest{private final String roomId,status;private final long checkInDate,checkOutDate;private final int guestCount;private final double totalPrice;private final String paymentMethod,slotId;public CreateBookingRequest(String r,long i,long o,int g,double t,String s,@Nullable String p,@Nullable String slot){roomId=r;checkInDate=i;checkOutDate=o;guestCount=g;totalPrice=t;status=s;paymentMethod=p;slotId=slot;}public String getRoomId(){return roomId;}public long getCheckInDate(){return checkInDate;}public long getCheckOutDate(){return checkOutDate;}public int getGuestCount(){return guestCount;}public double getTotalPrice(){return totalPrice;}public String getStatus(){return status;}public String getPaymentMethod(){return paymentMethod;}public String getSlotId(){return slotId;}}
+package com.example.homestay.data.model;
+
+import androidx.annotation.Nullable;
+
+public final class CreateBookingRequest {
+  private final String roomId, status;
+  private final long checkInDate, checkOutDate;
+  private final int guestCount;
+  private final double totalPrice;
+  private final String paymentMethod, slotId;
+
+  public CreateBookingRequest(
+      String r,
+      long i,
+      long o,
+      int g,
+      double t,
+      String s,
+      @Nullable String p,
+      @Nullable String slot) {
+    roomId = r;
+    checkInDate = i;
+    checkOutDate = o;
+    guestCount = g;
+    totalPrice = t;
+    status = s;
+    paymentMethod = p;
+    slotId = slot;
+  }
+
+  public String getRoomId() {
+    return roomId;
+  }
+
+  public long getCheckInDate() {
+    return checkInDate;
+  }
+
+  public long getCheckOutDate() {
+    return checkOutDate;
+  }
+
+  public int getGuestCount() {
+    return guestCount;
+  }
+
+  public double getTotalPrice() {
+    return totalPrice;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public String getPaymentMethod() {
+    return paymentMethod;
+  }
+
+  public String getSlotId() {
+    return slotId;
+  }
+}
