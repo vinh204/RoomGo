@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
@@ -80,30 +81,11 @@ public class AdminDashboardActivity extends AppCompatActivity {
     text(R.id.tv_stat_rooms, rooms.size() + "\nPhòng");
     text(R.id.tv_stat_users, users.size() + "\nNgười dùng");
     text(R.id.tv_stat_pending, pending + "\nChờ duyệt");
-    text(R.id.tv_stat_revenue, "Doanh thu dự kiến: " + money(expected) + " đ");
-    text(R.id.tv_stat_revenue_actual, "Doanh thu thực tế: " + money(actual) + " đ");
-    text(R.id.tv_booking_breakdown, bookings.size() + "\nTổng đặt chỗ");
-    text(R.id.tv_booking_completed, completed + "\nHoàn thành");
-    text(R.id.tv_booking_cancelled, cancelled + "\nĐã hủy");
-    Calendar cal = Calendar.getInstance();
-    cal.set(Calendar.DAY_OF_MONTH, 1);
-    cal.set(Calendar.HOUR_OF_DAY, 0);
-    int fresh = 0;
-    for (User u : users) if (u.getCreatedAt() >= cal.getTimeInMillis()) fresh++;
+    text(R.id.tv_stat_revenue, money(expected) + " đ");
+    text(R.id.tv_stat_revenue_actual, money(actual) + " đ");
     int occupancy = active == 0 ? 0 : occupied.size() * 100 / active;
-    text(
-        R.id.tv_operational_summary,
-        "Phòng đang mở     "
-            + active
-            + "/"
-            + rooms.size()
-            + "        Đang lưu trú     "
-            + occupied.size()
-            + "\nNgười dùng mới     "
-            + fresh
-            + "        Lấp đầy hiện tại     "
-            + occupancy
-            + "%");
+    text(R.id.tv_occupancy, occupancy + "%");
+    ((ProgressBar) findViewById(R.id.progress_occupancy)).setProgress(occupancy);
     LinearLayout container = findViewById(R.id.recent_bookings_container);
     container.removeAllViews();
     bookings.sort((a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
@@ -128,10 +110,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
   }
 
   private void setupViews() {
-    TextView name = findViewById(R.id.tv_admin_name);
-    name.setText(
-        getSharedPreferences("AdminSession", MODE_PRIVATE)
-            .getString("admin_fullname", "Administrator"));
     int[] hidden = {
       R.id.card_manage_rooms,
       R.id.card_view_users,
