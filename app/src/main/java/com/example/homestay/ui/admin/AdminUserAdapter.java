@@ -91,11 +91,11 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.Hold
               + " đ");
       DateFormat f = new SimpleDateFormat("dd/MM/yyyy", new Locale("vi", "VN"));
       created.setText(
-          "Tham gia: "
+          "Tham gia "
               + f.format(new Date(u.getCreatedAt()))
               + (u.getLastBookingAt() == null
                   ? ""
-                  : " • Gần nhất: " + f.format(new Date(u.getLastBookingAt()))));
+                  : " • Gần nhất " + f.format(new Date(u.getLastBookingAt()))));
       boolean locked = Boolean.TRUE.equals(u.getLocked()),
           permanent = Boolean.TRUE.equals(u.getPermanent());
       Integer failed = u.getFailedLoginAttempts();

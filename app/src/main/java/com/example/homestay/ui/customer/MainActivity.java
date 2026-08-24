@@ -441,7 +441,8 @@ public class MainActivity extends AppCompatActivity {
         email = content.findViewById(R.id.tv_user_email),
         phone = content.findViewById(R.id.tv_user_phone),
         membership = content.findViewById(R.id.tv_membership);
-    View phoneRow = content.findViewById(R.id.row_user_phone);
+    View phoneRow = content.findViewById(R.id.row_user_phone),
+        phoneDivider = content.findViewById(R.id.divider_user_phone);
     MaterialButton edit = content.findViewById(R.id.btn_edit_profile),
         logout = content.findViewById(R.id.btn_logout),
         admin = content.findViewById(R.id.btn_back_to_admin);
@@ -461,8 +462,10 @@ public class MainActivity extends AppCompatActivity {
                   if (u != null && u.getPhone() != null && !u.getPhone().trim().isEmpty()) {
                     phone.setText(u.getPhone());
                     phoneRow.setVisibility(View.VISIBLE);
+                    phoneDivider.setVisibility(View.VISIBLE);
                   } else {
                     phoneRow.setVisibility(View.GONE);
+                    phoneDivider.setVisibility(View.GONE);
                   }
                 });
           });
@@ -477,6 +480,7 @@ public class MainActivity extends AppCompatActivity {
                     email.setText(u.getEmail());
                     phone.setText(u.getPhone());
                     phoneRow.setVisibility(View.VISIBLE);
+                    phoneDivider.setVisibility(View.VISIBLE);
                   }
                 });
           });
@@ -487,6 +491,7 @@ public class MainActivity extends AppCompatActivity {
       name.setText("Khách");
       email.setText("Đăng nhập để tiếp tục");
       phoneRow.setVisibility(View.GONE);
+      phoneDivider.setVisibility(View.GONE);
       membership.setText("Chưa đăng nhập");
       edit.setText("Đăng nhập");
       edit.setOnClickListener(v -> openLogin(null));
