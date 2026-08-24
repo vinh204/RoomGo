@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.text.*;
 import android.view.View;
 import android.widget.*;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.*;
@@ -12,7 +13,6 @@ import com.example.homestay.R;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.model.*;
 import com.example.homestay.data.repository.HomestayRepository;
-import com.example.homestay.domain.BookingStatusPolicy;
 import com.example.homestay.domain.CancellationPolicy;
 import com.example.homestay.utils.*;
 import com.google.android.material.chip.ChipGroup;
@@ -169,7 +169,6 @@ public class AdminBookingsActivity extends AppCompatActivity {
   }
 
   private void showStatus(AdminBookingData b) {
-    List<String> values = new ArrayList<>(), labels = new ArrayList<>();
     if ("cancelled".equalsIgnoreCase(b.getStatus())
         && "REFUND_PENDING".equals(b.getPaymentStatus())) {
       new MaterialAlertDialogBuilder(this)
@@ -181,35 +180,25 @@ public class AdminBookingsActivity extends AppCompatActivity {
       return;
     }
     if ("pending".equalsIgnoreCase(b.getStatus())) {
-      values.add("confirmed");
-      labels.add("Đã xác nhận");
-      values.add("cancelled");
-      labels.add("Đã hủy");
-    } else if ("confirmed".equalsIgnoreCase(b.getStatus())) {
-      if (BookingStatusPolicy.canComplete(
-          b.getStatus(), b.getCheckOutDate(), System.currentTimeMillis())) {
-        values.add("completed");
-        labels.add("Hoàn thành");
-      }
-      values.add("cancelled");
-      labels.add("Đã hủy");
-    }
-    if (values.isEmpty()) {
-      toast("Booking đã ở trạng thái cuối");
+      String room = b.getRoom() == null ? "phòng đã đặt" : b.getRoom().getName();
+      new MaterialAlertDialogBuilder(this)
+          .setTitle("Xử lý yêu cầu đặt phòng")
+          .setMessage(
+              DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt())
+                  + " · "
+                  + room
+                  + "\nBạn muốn xác nhận hay từ chối yêu cầu này?")
+          .setNeutralButton("Quay lại", null)
+          .setNegativeButton("Từ chối", (dialog, which) -> showAdminCancellation(b))
+          .setPositiveButton("Xác nhận", (dialog, which) -> updateStatus(b.getId(), "confirmed"))
+          .show();
       return;
     }
-    new MaterialAlertDialogBuilder(this)
-        .setTitle("Đổi trạng thái booking")
-        .setSingleChoiceItems(
-            labels.toArray(new String[0]),
-            -1,
-            (d, w) -> {
-              if ("cancelled".equals(values.get(w))) showAdminCancellation(b);
-              else updateStatus(b.getId(), values.get(w));
-              d.dismiss();
-            })
-        .setNegativeButton("Hủy", null)
-        .show();
+    if ("confirmed".equalsIgnoreCase(b.getStatus())) {
+      showAdminCancellation(b);
+      return;
+    }
+    toast("Booking không còn thao tác cần xử lý");
   }
 
   private void markRefundProcessed(String id) {
@@ -234,26 +223,52 @@ public class AdminBookingsActivity extends AppCompatActivity {
 
   private void showAdminCancellation(AdminBookingData data) {
     TextInputEditText reason = new TextInputEditText(this);
-    reason.setHint("Lý do hủy từ quản trị viên");
-    reason.setText("Phòng không thể tiếp nhận khách");
+    reason.setHint("Nhập lý do hủy (bắt buộc)");
+    reason.setMinLines(2);
+    reason.setMaxLines(4);
     int padding = (int) (24 * getResources().getDisplayMetrics().density);
     android.widget.FrameLayout wrapper = new android.widget.FrameLayout(this);
-    wrapper.setPadding(padding, 0, padding, 0);
+    wrapper.setPadding(padding, 8, padding, 0);
     wrapper.addView(reason);
-    new MaterialAlertDialogBuilder(this)
-        .setTitle("Hủy booking")
-        .setMessage("Khách sẽ nhận được lý do hủy; chỉ booking đã thanh toán mới phát sinh hoàn tiền.")
-        .setView(wrapper)
-        .setNegativeButton("Quay lại", null)
-        .setPositiveButton(
-            "Xác nhận hủy",
-            (dialog, which) -> {
-              String value =
-                  reason.getText() == null ? "Hủy bởi quản trị viên" : reason.getText().toString().trim();
-              if (value.isEmpty()) value = "Hủy bởi quản trị viên";
-              cancelByAdmin(data.getId(), value);
-            })
-        .show();
+    double refund =
+        "PAID".equals(data.getPaymentStatus())
+            ? CancellationPolicy.refund(
+                data.getTotalPrice(), data.getCheckInDate(), System.currentTimeMillis())
+            : 0;
+    String room = data.getRoom() == null ? "Phòng đã đặt" : data.getRoom().getName();
+    String checkIn =
+        new SimpleDateFormat("dd/MM/yyyy · HH:mm", new Locale("vi", "VN"))
+            .format(new Date(data.getCheckInDate()));
+    AlertDialog dialog =
+        new MaterialAlertDialogBuilder(this)
+            .setTitle("Hủy " + DisplayFormatter.bookingCode(data.getId(), data.getCreatedAt()))
+            .setMessage(
+                room
+                    + "\nNhận phòng: "
+                    + checkIn
+                    + "\nHoàn dự kiến: "
+                    + DisplayFormatter.vnd(refund))
+            .setView(wrapper)
+            .setNegativeButton("Quay lại", null)
+            .setPositiveButton("Xác nhận hủy", null)
+            .create();
+    dialog.setOnShowListener(
+        ignored -> {
+          Button confirm = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+          confirm.setTextColor(0xFFD14343);
+          confirm.setOnClickListener(
+              view -> {
+                String value = reason.getText() == null ? "" : reason.getText().toString().trim();
+                if (value.isEmpty()) {
+                  reason.setError("Vui lòng nhập lý do hủy");
+                  reason.requestFocus();
+                  return;
+                }
+                dialog.dismiss();
+                cancelByAdmin(data.getId(), value);
+              });
+        });
+    dialog.show();
   }
 
   private void cancelByAdmin(String id, String reason) {

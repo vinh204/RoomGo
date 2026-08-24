@@ -48,17 +48,6 @@ public class HomestayApplication extends Application {
     return bookingRepository;
   }
 
-  /** Xóa dữ liệu cục bộ và tạo lại bộ dữ liệu phục vụ trình diễn. Gọi trên luồng nền. */
-  public void resetDemoData() {
-    getDatabase().clearAllTables();
-    getRepository().ensureAdminAccount();
-    getRepository().seedDemoData();
-    getSharedPreferences("DemoData", MODE_PRIVATE)
-        .edit()
-        .putBoolean("rooms_seeded", true)
-        .apply();
-  }
-
   @Override
   public void onCreate() {
     super.onCreate();

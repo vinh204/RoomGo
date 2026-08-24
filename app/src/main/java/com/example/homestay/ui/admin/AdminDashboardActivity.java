@@ -185,13 +185,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         return true;
                       });
               menu.getMenu()
-                  .add("Khôi phục dữ liệu demo")
-                  .setOnMenuItemClickListener(
-                      x -> {
-                        confirmResetDemoData();
-                        return true;
-                      });
-              menu.getMenu()
                   .add("Đăng xuất")
                   .setOnMenuItemClickListener(
                       x -> {
@@ -200,33 +193,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                       });
               menu.show();
             });
-  }
-
-  private void confirmResetDemoData() {
-    new MaterialAlertDialogBuilder(this)
-        .setTitle("Khôi phục dữ liệu demo?")
-        .setMessage(
-            "Toàn bộ phòng, booking, tài khoản khách, đánh giá và thông báo hiện tại sẽ bị xóa. "
-                + "Tài khoản admin được đưa về mật khẩu mặc định Admin@123.")
-        .setNegativeButton("Hủy", null)
-        .setPositiveButton(
-            "Khôi phục",
-            (dialog, which) ->
-                AppExecutors.io()
-                    .execute(
-                        () -> {
-                          ((HomestayApplication) getApplication()).resetDemoData();
-                          runOnUiThread(
-                              () -> {
-                                Toast.makeText(
-                                        this,
-                                        "Đã khôi phục dữ liệu demo. Vui lòng đăng nhập lại.",
-                                        Toast.LENGTH_LONG)
-                                    .show();
-                                logout();
-                              });
-                        }))
-        .show();
   }
 
   private void updateNotificationBadge(List<AppNotification> notifications) {

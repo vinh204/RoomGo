@@ -114,6 +114,16 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
               + " • Tạo lúc "
               + created);
       statusButton.setOnClickListener(v -> change.onBooking(b));
+      if ("pending".equals(b.getStatus())) {
+        statusButton.setText("Xử lý yêu cầu");
+        statusButton.setBackgroundTintList(ColorStateList.valueOf(0xFF0B4AA2));
+      } else if ("confirmed".equals(b.getStatus())) {
+        statusButton.setText("Hủy booking");
+        statusButton.setBackgroundTintList(ColorStateList.valueOf(0xFFD14343));
+      } else {
+        statusButton.setText("Xác nhận hoàn tiền");
+        statusButton.setBackgroundTintList(ColorStateList.valueOf(0xFF0B4AA2));
+      }
       boolean actionable =
           "pending".equals(b.getStatus())
               || "confirmed".equals(b.getStatus())

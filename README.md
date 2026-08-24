@@ -9,9 +9,11 @@ RoomGo là ứng dụng Android viết bằng **Java**, mô phỏng quy trình t
 - Chuẩn hóa vòng đời booking: chờ duyệt → đã xác nhận → đang lưu trú → hoàn thành.
 - Tự động cập nhật trạng thái theo giờ nhận phòng 14:00 và trả phòng 12:00 bằng WorkManager.
 - Hiển thị số lượng còn trống theo dạng **Còn X/Y phòng** và cập nhật ngay khi booking thay đổi.
-- Bổ sung bộ dữ liệu mẫu nhiều trạng thái và chức năng khôi phục dữ liệu demo trong trang quản trị.
+- Bổ sung bộ dữ liệu mẫu có nhiều trạng thái để thuận tiện trình diễn.
 - Tối ưu giao diện chi tiết booking: ngày và giờ tách dòng, số đêm hiển thị bằng chip bo tròn.
 - Tăng cường quy tắc hủy phòng, trạng thái thanh toán, khóa tài khoản và thông báo riêng cho khách/quản trị.
+- Thêm logo RoomGo nền trong suốt ở bên trái header giao diện khách.
+- Thay hộp chọn trạng thái dạng RadioButton bằng thao tác theo ngữ cảnh: xác nhận/từ chối yêu cầu, hủy booking hoặc xác nhận hoàn tiền.
 
 ## Chức năng
 
@@ -33,11 +35,10 @@ RoomGo là ứng dụng Android viết bằng **Java**, mô phỏng quy trình t
 - Xem tổng quan phòng, người dùng, booking và doanh thu.
 - Quản lý phòng: thêm, sửa, ẩn, xóa, chọn nhiều ảnh và đánh dấu phòng nổi bật.
 - Chỉ cho phép một phòng được đánh dấu nổi bật tại một thời điểm.
-- Tìm kiếm, lọc và cập nhật trạng thái booking.
+- Tìm kiếm, lọc và xử lý booking theo trạng thái: xác nhận hoặc từ chối yêu cầu, hủy booking và xác nhận hoàn tiền.
 - Xem, chỉnh sửa, khóa hoặc xóa tài khoản khách hàng.
 - Nhận thông báo riêng khi có hoạt động mới.
 - Chuyển sang giao diện khách mà vẫn sử dụng được các chức năng khách hàng.
-- Khôi phục nhanh bộ dữ liệu demo có đủ các trạng thái booking.
 
 ## Công nghệ sử dụng
 
@@ -130,7 +131,7 @@ Mật khẩu: Admin@123
 
 ## Tài khoản khách mẫu
 
-Sau lần cài mới hoặc khi quản trị viên chọn **Khôi phục dữ liệu demo**, ứng dụng tạo:
+Ở lần cài mới, ứng dụng tự tạo:
 
 ```text
 Email:    demo@roomgo.vn
@@ -163,11 +164,10 @@ Giờ quy ước:
 1. Đăng nhập bằng tài khoản quản trị mặc định.
 2. Tab **Tổng quan** hiển thị số phòng, người dùng, booking chờ duyệt, doanh thu và các booking gần nhất.
 3. Tab **Phòng** dùng để thêm/sửa phòng, quản lý ảnh, trạng thái mở và phòng nổi bật.
-4. Tab **Đặt chỗ** dùng để tìm booking và thay đổi trạng thái.
+4. Tab **Đặt chỗ** dùng để tìm và xử lý booking. Booking chờ duyệt có hai lựa chọn **Xác nhận/Từ chối**; booking đã xác nhận có thể **Hủy booking**; booking đang lưu trú hoặc đã kết thúc không cho thay đổi thủ công.
 5. Tab **Người dùng** dùng để xem chi tiết, sửa thông tin, đổi mật khẩu hoặc khóa khách hàng.
 6. Nhấn avatar quản trị để mở menu **Xem giao diện khách** hoặc **Đăng xuất**.
 7. Khi đang ở giao diện khách, mở tab **Tài khoản** để quay lại trang quản trị.
-8. Trong menu avatar, chọn **Khôi phục dữ liệu demo** nếu cần đưa ứng dụng về dữ liệu trình diễn ban đầu. Thao tác này xóa dữ liệu SQLite hiện tại và yêu cầu đăng nhập lại.
 
 ## Dữ liệu SQLite
 
@@ -262,21 +262,6 @@ Xem database trong Android Studio:
 4. Chọn tiến trình `com.example.homestay` và database `homestay_database`.
 
 Database hiện ở phiên bản 18. Phiên bản này lưu thêm vai trò tài khoản, trạng thái thanh toán và thời hạn giữ phòng. Khi thay đổi Entity, cần tăng version và thêm `Migration` tương ứng trong `HomestayDatabase` để giữ dữ liệu cũ.
-
-### Đặt lại dữ liệu demo
-
-Cách nhanh nhất: đăng nhập quản trị, nhấn avatar và chọn **Khôi phục dữ liệu demo**. Sau xác nhận, ứng dụng tạo lại phòng, tài khoản và booking mẫu rồi đưa người dùng về màn hình đăng nhập.
-
-Cũng có thể xóa toàn bộ storage từ hệ thống:
-
-- Android: **Settings > Apps > RoomGo > Storage > Clear storage**.
-- Hoặc dùng ADB:
-
-```bash
-adb shell pm clear com.example.homestay
-```
-
-Sau khi mở lại, ứng dụng tạo lại phòng mẫu và tài khoản quản trị mặc định. Thao tác này xóa toàn bộ tài khoản, booking, yêu thích và đánh giá cục bộ.
 
 ## Cấu trúc mã nguồn
 
