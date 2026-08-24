@@ -2,19 +2,6 @@
 
 RoomGo là ứng dụng Android viết bằng **Java**, mô phỏng quy trình tìm kiếm và đặt phòng homestay. Ứng dụng có hai giao diện dành cho khách hàng và quản trị viên; toàn bộ dữ liệu demo được lưu cục bộ bằng **Room/SQLite**.
 
-> Đây là dự án học tập/bài tập lớn. Cơ chế đăng nhập và dữ liệu hiện tại phù hợp để trình diễn trên thiết bị cá nhân, chưa phù hợp để triển khai production.
-
-## Cập nhật gần nhất
-
-- Chuẩn hóa vòng đời booking: chờ duyệt → đã xác nhận → đang lưu trú → hoàn thành.
-- Tự động cập nhật trạng thái theo giờ nhận phòng 14:00 và trả phòng 12:00 bằng WorkManager.
-- Hiển thị số lượng còn trống theo dạng **Còn X/Y phòng** và cập nhật ngay khi booking thay đổi.
-- Bổ sung bộ dữ liệu mẫu có nhiều trạng thái để thuận tiện trình diễn.
-- Tối ưu giao diện chi tiết booking: ngày và giờ tách dòng, số đêm hiển thị bằng chip bo tròn.
-- Tăng cường quy tắc hủy phòng, trạng thái thanh toán, khóa tài khoản và thông báo riêng cho khách/quản trị.
-- Thêm logo RoomGo nền trong suốt ở bên trái header giao diện khách.
-- Thay hộp chọn trạng thái dạng RadioButton bằng thao tác theo ngữ cảnh: xác nhận/từ chối yêu cầu, hủy booking hoặc xác nhận hoàn tiền.
-
 ## Chức năng
 
 ### Khách hàng
