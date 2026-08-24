@@ -7,6 +7,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.homestay.R;
 import com.example.homestay.data.entity.*;
+import com.example.homestay.utils.DisplayFormatter;
 import java.text.*;
 import java.util.*;
 
@@ -58,9 +59,7 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.Holder> 
     void bind(BookingWithRoom value) {
       Booking b = value.getBooking();
       Room r = value.getRoom();
-      String codeDate =
-          new SimpleDateFormat("yyMMdd", Locale.getDefault()).format(new Date(b.getCreatedAt()));
-      id.setText("#RG" + codeDate + String.format(Locale.ROOT, "%03d", b.getId()));
+      id.setText(DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt()));
       status.setText(label(b.getStatus()));
       status.setBackgroundTintList(ColorStateList.valueOf(color(b.getStatus())));
       roomName.setText(r == null ? "Phòng không tồn tại" : r.getName());

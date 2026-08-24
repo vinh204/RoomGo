@@ -39,8 +39,10 @@ dependencies {
     implementation libs.androidx.lifecycle.livedata.core
     implementation libs.androidx.recyclerview
     implementation libs.androidx.swiperefreshlayout
+    implementation libs.androidx.viewpager2
     implementation libs.bcrypt
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
+    androidTestImplementation libs.androidx.room.testing
 }

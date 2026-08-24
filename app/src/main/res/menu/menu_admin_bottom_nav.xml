@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/admin_nav_dashboard" android:icon="@drawable/ic_admin_dashboard" android:title="Tổng quan" />
-    <item android:id="@+id/admin_nav_rooms" android:icon="@drawable/ic_admin_rooms" android:title="Phòng" />
-    <item android:id="@+id/admin_nav_bookings" android:icon="@drawable/ic_admin_bookings" android:title="Đặt chỗ" />
-    <item android:id="@+id/admin_nav_users" android:icon="@drawable/ic_admin_users" android:title="Người dùng" />
-</menu>

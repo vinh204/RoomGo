@@ -14,6 +14,7 @@ public class HomestayRepository {
   private final FavoriteDao favorites;
   private final NotificationDao notifications;
   private final ReviewDao reviews;
+  private final RoomImageDao roomImages;
 
   public HomestayRepository(
       RoomDao r,
@@ -22,7 +23,8 @@ public class HomestayRepository {
       UserDao u,
       FavoriteDao f,
       NotificationDao n,
-      ReviewDao v) {
+      ReviewDao v,
+      RoomImageDao i) {
     rooms = r;
     slots = s;
     bookings = b;
@@ -30,6 +32,7 @@ public class HomestayRepository {
     favorites = f;
     notifications = n;
     reviews = v;
+    roomImages = i;
   }
 
   public List<Room> getAllRoomsNow() {
@@ -60,6 +63,18 @@ public class HomestayRepository {
     favorites.deleteByRoomId(r.getId());
     slots.deleteByRoomId(r.getId());
     rooms.deleteRoom(r);
+  }
+
+  public List<RoomImage> getRoomImages(long roomId) {
+    return roomImages.getByRoomId(roomId);
+  }
+
+  public void replaceRoomImages(long roomId, List<String> imageUris) {
+    roomImages.deleteByRoomId(roomId);
+    List<RoomImage> values = new ArrayList<>();
+    for (int position = 0; position < imageUris.size(); position++)
+      values.add(new RoomImage(0, roomId, imageUris.get(position), position));
+    if (!values.isEmpty()) roomImages.insertAll(values);
   }
 
   public List<Slot> getSlotsByRoomIdNow(long id) {
@@ -193,6 +208,14 @@ public class HomestayRepository {
     return notifications.getByUserNow(id);
   }
 
+  public List<AppNotification> getCustomerNotificationsNow(long id) {
+    return notifications.getCustomerByUserNow(id);
+  }
+
+  public List<AppNotification> getAdminNotificationsNow(long id) {
+    return notifications.getAdminByUserNow(id);
+  }
+
   public long insertNotification(AppNotification n) {
     return notifications.insert(n);
   }
@@ -203,6 +226,14 @@ public class HomestayRepository {
 
   public void markAllNotificationsRead(long id) {
     notifications.markAllRead(id);
+  }
+
+  public void markAllCustomerNotificationsRead(long id) {
+    notifications.markAllCustomerRead(id);
+  }
+
+  public void markAllAdminNotificationsRead(long id) {
+    notifications.markAllAdminRead(id);
   }
 
   public void syncBookingNotifications(long userId) {
@@ -221,7 +252,16 @@ public class HomestayRepository {
           break;
         case "cancelled":
           title = "Đặt phòng đã bị hủy";
-          message = "Booking tại " + room + " đã bị hủy.";
+          message =
+              "Booking tại "
+                  + room
+                  + " đã bị hủy."
+                  + (b.getCancellationReason() == null
+                      ? ""
+                      : " Lý do: " + b.getCancellationReason() + ".")
+                  + " Khoản hoàn dự kiến: "
+                  + com.example.homestay.utils.DisplayFormatter.vnd(b.getRefundAmount())
+                  + ".";
           break;
         case "completed":
           title = "Chuyến đi đã hoàn thành";
@@ -244,6 +284,97 @@ public class HomestayRepository {
               false,
               "pending".equals(status) ? b.getCreatedAt() : System.currentTimeMillis()));
     }
+  }
+
+  public List<AppNotification> syncAdminActivityNotifications() {
+    User admin = users.getUserByEmail("admin@gmail.com");
+    if (admin == null) return Collections.emptyList();
+    long adminId = admin.getId();
+    Map<Long, User> userMap = new HashMap<>();
+    for (User user : users.getAllUsersNow()) {
+      userMap.put(user.getId(), user);
+      if (user.getId() == adminId) continue;
+      notifications.insert(
+          new AppNotification(
+              0,
+              adminId,
+              "admin_user_" + user.getId(),
+              "Có tài khoản mới",
+              user.getFullName() + " đã đăng ký tài khoản RoomGo.",
+              "admin_user",
+              null,
+              null,
+              false,
+              user.getCreatedAt()));
+    }
+
+    Map<Long, Room> roomMap = new HashMap<>();
+    for (Room room : rooms.getAllRoomsNow()) roomMap.put(room.getId(), room);
+    for (Booking booking : bookings.getAllBookingsNow()) {
+      User user = userMap.get(booking.getUserId());
+      Room room = roomMap.get(booking.getRoomId());
+      notifications.insert(
+          new AppNotification(
+              0,
+              adminId,
+              "admin_booking_" + booking.getId(),
+              "Có yêu cầu đặt phòng mới",
+              (user == null ? "Khách hàng" : user.getFullName())
+                  + " đã đặt "
+                  + (room == null ? "một phòng" : room.getName())
+                  + ".",
+              "admin_booking",
+              booking.getId(),
+              booking.getRoomId(),
+              false,
+              booking.getCreatedAt()));
+      if ("cancelled".equals(booking.getStatus())
+          && booking.getCancelledAt() > 0
+          && (booking.getCancellationReason() == null
+              || !booking.getCancellationReason().startsWith("Quản trị viên:"))) {
+        notifications.insert(
+            new AppNotification(
+                0,
+                adminId,
+                "admin_booking_cancelled_" + booking.getId(),
+                "Khách đã hủy đặt phòng",
+                (user == null ? "Khách hàng" : user.getFullName())
+                    + " đã hủy "
+                    + (room == null ? "một phòng" : room.getName())
+                    + ". Lý do: "
+                    + (booking.getCancellationReason() == null
+                        ? "Không cung cấp"
+                        : booking.getCancellationReason()),
+                "admin_booking",
+                booking.getId(),
+                booking.getRoomId(),
+                false,
+                booking.getCancelledAt()));
+      }
+    }
+
+    for (Review review : reviews.getAllNow()) {
+      User user = userMap.get(review.getUserId());
+      Room room = roomMap.get(review.getRoomId());
+      notifications.insert(
+          new AppNotification(
+              0,
+              adminId,
+              "admin_review_" + review.getId() + "_" + review.getUpdatedAt(),
+              "Có đánh giá phòng mới",
+              (user == null ? "Khách hàng" : user.getFullName())
+                  + " đã đánh giá "
+                  + review.getRating()
+                  + " sao cho "
+                  + (room == null ? "phòng" : room.getName())
+                  + ".",
+              "admin_review",
+              review.getBookingId(),
+              review.getRoomId(),
+              false,
+              review.getUpdatedAt()));
+    }
+    return notifications.getAdminByUserNow(adminId);
   }
 
   public List<Review> getReviewsByRoomNow(long id) {

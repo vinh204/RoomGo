@@ -23,7 +23,7 @@
                         android:layout_height="180dp"
                         android:contentDescription="@string/app_name"
                         android:scaleType="centerCrop"
-                        android:src="@mipmap/ic_launcher" />
+                        android:src="@drawable/ic_room_placeholder" />
 
                     <ImageButton
                         android:id="@+id/btn_favorite"

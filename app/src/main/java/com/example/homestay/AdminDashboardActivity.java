@@ -2,21 +2,24 @@ package com.example.homestay;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.repository.HomestayRepository;
 import com.example.homestay.utils.*;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
 import java.text.*;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class AdminDashboardActivity extends AppCompatActivity {
   private HomestayRepository repository;
+  private DashboardPeriod dashboardPeriod = DashboardPeriod.MONTH;
 
   @Override
   protected void onCreate(Bundle s) {
@@ -40,71 +43,90 @@ public class AdminDashboardActivity extends AppCompatActivity {
   }
 
   private void loadDashboard() {
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
+              List<AppNotification> adminNotifications =
+                  repository.syncAdminActivityNotifications();
+              SystemNotificationHelper.publishNew(this, adminNotifications);
               List<Room> rooms = repository.getAllRoomsNow();
               List<User> users = repository.getAllUsersNow();
               List<Booking> bookings = repository.getAllBookingsNow();
-              runOnUiThread(() -> render(rooms, users, bookings));
+              runOnUiThread(
+                  () -> {
+                    updateNotificationBadge(adminNotifications);
+                    render(rooms, users, bookings);
+                  });
             });
   }
 
   private void render(List<Room> rooms, List<User> users, List<Booking> bookings) {
-    int pending = 0, confirmed = 0, completed = 0, cancelled = 0, active = 0;
-    double expected = 0, actual = 0;
+    int pending = 0, active = 0, staying = 0, completed = 0, cancelled = 0;
+    double expected = 0, actual = 0, previousActual = 0;
     long now = System.currentTimeMillis();
-    Set<Long> occupied = new HashSet<>();
+    long periodStart = periodStart(dashboardPeriod, now);
+    long previousStart = previousPeriodStart(dashboardPeriod, periodStart);
     for (Room r : rooms) if (r.isAvailable()) active++;
     for (Booking b : bookings) {
-      switch (b.getStatus()) {
-        case "pending":
-          pending++;
-          break;
-        case "confirmed":
-          confirmed++;
-          break;
-        case "completed":
-          completed++;
-          break;
-        case "cancelled":
-          cancelled++;
-          break;
-      }
-      if ("confirmed".equals(b.getStatus()) || "completed".equals(b.getStatus()))
+      if ("pending".equals(b.getStatus())) pending++;
+      boolean inPeriod = b.getCreatedAt() >= periodStart && b.getCreatedAt() <= now;
+      if (inPeriod
+          && ("confirmed".equals(b.getStatus()) || "completed".equals(b.getStatus())))
         expected += b.getTotalPrice();
-      if ("completed".equals(b.getStatus())) actual += b.getTotalPrice();
+      if (inPeriod && "completed".equals(b.getStatus())) actual += b.getTotalPrice();
+      if (inPeriod && "completed".equals(b.getStatus())) completed++;
+      if (inPeriod && "cancelled".equals(b.getStatus())) cancelled++;
       if ("confirmed".equals(b.getStatus())
           && b.getCheckInDate() <= now
-          && b.getCheckOutDate() >= now) occupied.add(b.getRoomId());
+          && b.getCheckOutDate() >= now) staying++;
+      if (b.getCreatedAt() >= previousStart
+          && b.getCreatedAt() < periodStart
+          && "completed".equals(b.getStatus())) previousActual += b.getTotalPrice();
     }
-    text(R.id.tv_stat_rooms, rooms.size() + "\nPhòng");
+    text(R.id.tv_stat_rooms, active + "\nPhòng đang mở");
     text(R.id.tv_stat_users, users.size() + "\nNgười dùng");
     text(R.id.tv_stat_pending, pending + "\nChờ duyệt");
-    text(R.id.tv_stat_revenue, money(expected) + " đ");
-    text(R.id.tv_stat_revenue_actual, money(actual) + " đ");
-    int occupancy = active == 0 ? 0 : occupied.size() * 100 / active;
-    text(R.id.tv_occupancy, occupancy + "%");
-    ((ProgressBar) findViewById(R.id.progress_occupancy)).setProgress(occupancy);
+    text(R.id.tv_stat_revenue, DisplayFormatter.vnd(expected));
+    text(R.id.tv_stat_revenue_actual, DisplayFormatter.vnd(actual));
+    text(
+        R.id.tv_period_summary,
+        staying + " đang lưu trú  ·  " + completed + " hoàn thành  ·  " + cancelled + " đã hủy");
+    int change =
+        previousActual == 0
+            ? (actual > 0 ? 100 : 0)
+            : (int) Math.round((actual - previousActual) * 100 / previousActual);
+    TextView comparison = findViewById(R.id.tv_revenue_comparison);
+    comparison.setText(
+        (change > 0 ? "+" : "") + change + "% so với " + dashboardPeriod.previousLabel);
+    comparison.setTextColor(change >= 0 ? 0xFF167A50 : 0xFFD14343);
     LinearLayout container = findViewById(R.id.recent_bookings_container);
     container.removeAllViews();
     bookings.sort((a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
-    SimpleDateFormat date = new SimpleDateFormat("dd/MM HH:mm", new Locale("vi", "VN")),
-        codeDate = new SimpleDateFormat("yyMMdd", Locale.getDefault());
-    for (int i = 0; i < Math.min(3, bookings.size()); i++) {
+    SimpleDateFormat date = new SimpleDateFormat("dd/MM HH:mm", new Locale("vi", "VN"));
+    int recentCount = Math.min(5, bookings.size());
+    for (int i = 0; i < recentCount; i++) {
       Booking b = bookings.get(i);
       View card = getLayoutInflater().inflate(R.layout.item_admin_recent_booking, container, false);
       ((TextView) card.findViewById(R.id.tv_recent_code))
-          .setText(
-              "#RG"
-                  + codeDate.format(new Date(b.getCreatedAt()))
-                  + String.format(Locale.ROOT, "%03d", b.getId()));
+          .setText(DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt()));
       TextView status = card.findViewById(R.id.tv_recent_status);
       status.setText(statusLabel(b.getStatus()));
       status.setTextColor(statusColor(b.getStatus()));
       ((TextView) card.findViewById(R.id.tv_recent_meta))
           .setText(date.format(new Date(b.getCreatedAt())));
-      ((TextView) card.findViewById(R.id.tv_recent_price)).setText(money(b.getTotalPrice()) + " đ");
+      ((TextView) card.findViewById(R.id.tv_recent_price))
+          .setText(DisplayFormatter.vnd(b.getTotalPrice()));
+      card.findViewById(R.id.recent_divider)
+          .setVisibility(i == recentCount - 1 ? View.GONE : View.VISIBLE);
+      card.setOnClickListener(
+          view -> {
+            Intent intent = new Intent(this, AdminBookingsActivity.class);
+            intent.putExtra(
+                AdminBookingsActivity.EXTRA_BOOKING_CODE,
+                DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt()));
+            startActivity(intent);
+            overridePendingTransition(0, 0);
+          });
       container.addView(card);
     }
   }
@@ -114,15 +136,40 @@ public class AdminDashboardActivity extends AppCompatActivity {
       R.id.card_manage_rooms,
       R.id.card_view_users,
       R.id.card_manage_bookings,
-      R.id.btn_logout,
-      R.id.btn_switch_to_guest,
       R.id.tv_management_title
     };
     for (int id : hidden) findViewById(id).setVisibility(View.GONE);
+    findViewById(R.id.btn_admin_notifications)
+        .setOnClickListener(
+            view -> startActivity(new Intent(this, AdminNotificationsActivity.class)));
+    findViewById(R.id.card_stat_rooms)
+        .setOnClickListener(view -> openAdminScreen(AdminRoomsActivity.class));
+    findViewById(R.id.card_stat_users)
+        .setOnClickListener(view -> openAdminScreen(AdminUsersActivity.class));
+    findViewById(R.id.card_stat_pending)
+        .setOnClickListener(view -> openAdminScreen(AdminBookingsActivity.class));
+    findViewById(R.id.card_period_summary)
+        .setOnClickListener(view -> openAdminScreen(AdminBookingsActivity.class));
+    findViewById(R.id.btn_dashboard_period)
+        .setOnClickListener(
+            anchor -> {
+              PopupMenu periods = new PopupMenu(this, anchor, Gravity.END);
+              addPeriod(periods, "Hôm nay", DashboardPeriod.TODAY);
+              addPeriod(periods, "7 ngày", DashboardPeriod.SEVEN_DAYS);
+              addPeriod(periods, "Tháng này", DashboardPeriod.MONTH);
+              periods.show();
+            });
     findViewById(R.id.btn_admin_account)
         .setOnClickListener(
             anchor -> {
-              PopupMenu menu = new PopupMenu(this, anchor);
+              PopupMenu menu = new PopupMenu(this, anchor, Gravity.END);
+              menu.getMenu()
+                  .add("Đổi mật khẩu")
+                  .setOnMenuItemClickListener(
+                      x -> {
+                        showChangePassword();
+                        return true;
+                      });
               menu.getMenu()
                   .add("Xem giao diện khách")
                   .setOnMenuItemClickListener(
@@ -141,8 +188,126 @@ public class AdminDashboardActivity extends AppCompatActivity {
             });
   }
 
+  private void updateNotificationBadge(List<AppNotification> notifications) {
+    int unread = 0;
+    for (AppNotification notification : notifications)
+      if (!notification.isRead()) unread++;
+    TextView badge =
+        findViewById(R.id.btn_admin_notifications).findViewById(R.id.tv_notification_badge);
+    badge.setVisibility(unread == 0 ? View.GONE : View.VISIBLE);
+    badge.setText(unread > 99 ? "99+" : String.valueOf(unread));
+  }
+
+  private void addPeriod(PopupMenu menu, String label, DashboardPeriod period) {
+    menu.getMenu()
+        .add(label)
+        .setOnMenuItemClickListener(
+            item -> {
+              dashboardPeriod = period;
+              ((TextView) findViewById(R.id.btn_dashboard_period)).setText(label + " ▾");
+              loadDashboard();
+              return true;
+            });
+  }
+
+  private void openAdminScreen(Class<? extends AppCompatActivity> target) {
+    startActivity(new Intent(this, target));
+    overridePendingTransition(0, 0);
+  }
+
+  private static long periodStart(DashboardPeriod period, long now) {
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTimeInMillis(now);
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    if (period == DashboardPeriod.SEVEN_DAYS) calendar.add(Calendar.DAY_OF_MONTH, -6);
+    if (period == DashboardPeriod.MONTH) calendar.set(Calendar.DAY_OF_MONTH, 1);
+    return calendar.getTimeInMillis();
+  }
+
+  private static long previousPeriodStart(DashboardPeriod period, long start) {
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTimeInMillis(start);
+    if (period == DashboardPeriod.TODAY) calendar.add(Calendar.DAY_OF_MONTH, -1);
+    else if (period == DashboardPeriod.SEVEN_DAYS) calendar.add(Calendar.DAY_OF_MONTH, -7);
+    else calendar.add(Calendar.MONTH, -1);
+    return calendar.getTimeInMillis();
+  }
+
+  private enum DashboardPeriod {
+    TODAY("hôm qua"),
+    SEVEN_DAYS("7 ngày trước"),
+    MONTH("tháng trước");
+
+    final String previousLabel;
+
+    DashboardPeriod(String previousLabel) {
+      this.previousLabel = previousLabel;
+    }
+  }
+
+  private void showChangePassword() {
+    View content = getLayoutInflater().inflate(R.layout.dialog_admin_change_password, null);
+    TextInputEditText password = content.findViewById(R.id.et_admin_new_password);
+    TextInputEditText confirm = content.findViewById(R.id.et_admin_confirm_password);
+    androidx.appcompat.app.AlertDialog dialog =
+        new MaterialAlertDialogBuilder(this)
+            .setTitle("Đổi mật khẩu admin")
+            .setView(content)
+            .setNegativeButton("Hủy", null)
+            .setPositiveButton("Cập nhật", null)
+            .create();
+    dialog.setOnShowListener(
+        ignored ->
+            dialog
+                .getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(
+                    view -> {
+                      String newPassword = fieldText(password);
+                      if (!InputValidator.isPasswordValid(newPassword)) {
+                        password.setError(InputValidator.getPasswordErrorMessage(newPassword));
+                        return;
+                      }
+                      if (!newPassword.equals(fieldText(confirm))) {
+                        confirm.setError("Mật khẩu xác nhận không khớp");
+                        return;
+                      }
+                      AppExecutors.io()
+                          .execute(
+                              () -> {
+                                User admin = repository.getUserByEmail(AdminAuth.EMAIL);
+                                if (admin != null)
+                                  repository.updateUser(admin.withPassword(newPassword));
+                                runOnUiThread(
+                                    () -> {
+                                      if (admin == null) {
+                                        password.setError("Không tìm thấy tài khoản admin");
+                                        return;
+                                      }
+                                      getSharedPreferences("AdminSecurity", MODE_PRIVATE)
+                                          .edit()
+                                          .putBoolean("admin_password_customized", true)
+                                          .apply();
+                                      dialog.dismiss();
+                                      Toast.makeText(
+                                              this,
+                                              "Đã cập nhật mật khẩu admin",
+                                              Toast.LENGTH_SHORT)
+                                          .show();
+                                    });
+                              });
+                    }));
+    dialog.show();
+  }
+
+  private static String fieldText(TextInputEditText field) {
+    return field.getText() == null ? "" : field.getText().toString();
+  }
+
   private void ensureAdminCustomerSession() {
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               SessionManager session = new SessionManager(this);
@@ -191,10 +356,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
   private void text(int id, String value) {
     ((TextView) findViewById(id)).setText(value);
-  }
-
-  private static String money(double v) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) v);
   }
 
   private static String statusLabel(String s) {

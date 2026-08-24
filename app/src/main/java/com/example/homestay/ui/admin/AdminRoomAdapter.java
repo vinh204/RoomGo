@@ -7,6 +7,7 @@ import android.widget.*;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.homestay.R;
 import com.example.homestay.data.model.AdminRoomData;
+import com.example.homestay.utils.DisplayFormatter;
 import com.example.homestay.utils.ImageLoader;
 import java.text.*;
 import java.util.*;
@@ -80,7 +81,7 @@ public class AdminRoomAdapter extends RecyclerView.Adapter<AdminRoomAdapter.Hold
     void bind(AdminRoomData r) {
       itemView.setOnClickListener(v -> details.onRoom(r));
       name.setText(r.getName());
-      price.setText(money(r.getPrice()) + " / đêm");
+      price.setText(DisplayFormatter.vnd(r.getPrice()) + " / đêm");
       location.setText(
           r.getRoomType()
               + " • "
@@ -90,7 +91,7 @@ public class AdminRoomAdapter extends RecyclerView.Adapter<AdminRoomAdapter.Hold
           r.getArea()
               + " m² • "
               + r.getMaxSlots()
-              + " slot"
+              + " phòng"
               + (r.isFeatured() ? " • ★ Nổi bật" : ""));
       status.setText(r.isAvailable() ? "Đang mở" : "Tạm ẩn");
       status.setBackgroundTintList(
@@ -105,14 +106,13 @@ public class AdminRoomAdapter extends RecyclerView.Adapter<AdminRoomAdapter.Hold
               + " • "
               + (r.getAmenities().trim().isEmpty() ? "Chưa có tiện nghi" : r.getAmenities()));
       performance.setText(
-          r.getBookingCount() + " booking • " + money(r.getRevenue()) + " doanh thu");
+          r.getBookingCount()
+              + " booking • "
+              + DisplayFormatter.vnd(r.getRevenue())
+              + " doanh thu");
       ImageLoader.load(image, r.getImageUrl(), R.drawable.ic_room_placeholder);
       editButton.setOnClickListener(v -> edit.onRoom(r));
       deleteButton.setOnClickListener(v -> delete.onRoom(r));
     }
-  }
-
-  private static String money(double v) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(v) + " đ";
   }
 }

@@ -11,7 +11,6 @@ import com.example.homestay.ui.adapter.NotificationAdapter;
 import com.example.homestay.utils.*;
 import com.google.android.material.appbar.MaterialToolbar;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class NotificationsActivity extends AppCompatActivity {
   private HomestayRepository repository;
@@ -34,8 +33,7 @@ public class NotificationsActivity extends AppCompatActivity {
     adapter =
         new NotificationAdapter(
             n -> {
-              Executors.newSingleThreadExecutor()
-                  .execute(() -> repository.markNotificationRead(n.getId()));
+              AppExecutors.io().execute(() -> repository.markNotificationRead(n.getId()));
               startActivity(new Intent(this, MainActivity.class).putExtra("open_tab", "bookings"));
             });
     RecyclerView list = findViewById(R.id.recycler_notifications);
@@ -44,21 +42,21 @@ public class NotificationsActivity extends AppCompatActivity {
     findViewById(R.id.btn_mark_all_read)
         .setOnClickListener(
             v ->
-                Executors.newSingleThreadExecutor()
+                AppExecutors.io()
                     .execute(
                         () -> {
-                          repository.markAllNotificationsRead(userId);
+                          repository.markAllCustomerNotificationsRead(userId);
                           runOnUiThread(this::load);
                         }));
     load();
   }
 
   private void load() {
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               repository.syncBookingNotifications(userId);
-              List<AppNotification> values = repository.getNotificationsNow(userId);
+              List<AppNotification> values = repository.getCustomerNotificationsNow(userId);
               runOnUiThread(
                   () -> {
                     adapter.submitList(values);
@@ -73,7 +71,7 @@ public class NotificationsActivity extends AppCompatActivity {
                     findViewById(R.id.recycler_notifications)
                         .setVisibility(empty ? View.GONE : View.VISIBLE);
                     findViewById(R.id.btn_mark_all_read)
-                        .setVisibility(unread ? View.VISIBLE : View.INVISIBLE);
+                        .setVisibility(unread ? View.VISIBLE : View.GONE);
                   });
             });
   }

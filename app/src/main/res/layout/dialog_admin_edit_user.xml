@@ -34,11 +34,21 @@
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:inputType="textPassword" android:singleLine="true" />
     </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/cb_admin_user_locked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Khóa tài khoản"
+        android:textColor="@color/home_title"
+        android:textSize="15sp"
+        app:buttonTint="@color/home_primary" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="20dp" android:gravity="end" android:orientation="horizontal">
+        android:layout_marginTop="12dp" android:gravity="end" android:orientation="horizontal">
         <com.google.android.material.button.MaterialButton android:id="@+id/btn_cancel"
             android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hủy"
-            android:textAllCaps="false" app:backgroundTint="@android:color/transparent" />
+            android:textAllCaps="false" android:textColor="@color/home_primary"
+            android:textStyle="bold" app:backgroundTint="@android:color/transparent" />
         <com.google.android.material.button.MaterialButton android:id="@+id/btn_save"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_marginStart="10dp" android:text="Lưu thay đổi" android:textAllCaps="false"

@@ -14,11 +14,11 @@ import com.example.homestay.data.repository.HomestayRepository;
 import com.example.homestay.ui.admin.AdminUserAdapter;
 import com.example.homestay.utils.*;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import java.text.*;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class AdminUsersActivity extends AppCompatActivity {
   private HomestayRepository repository;
@@ -48,7 +48,7 @@ public class AdminUsersActivity extends AppCompatActivity {
     progress = findViewById(R.id.progress_bar);
     adapter =
         new AdminUserAdapter(
-            new ArrayList<>(), this::confirmDelete, this::confirmUnlock, this::details, this::edit);
+            new ArrayList<>(), this::confirmDelete, this::details, this::edit);
     RecyclerView list = findViewById(R.id.rv_users);
     list.setLayoutManager(new LinearLayoutManager(this));
     list.setAdapter(adapter);
@@ -77,7 +77,7 @@ public class AdminUsersActivity extends AppCompatActivity {
 
   private void load() {
     progress.setVisibility(View.VISIBLE);
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               List<Booking> all = repository.getAllBookingsNow();
@@ -135,7 +135,7 @@ public class AdminUsersActivity extends AppCompatActivity {
   }
 
   private void details(AdminUserData u) {
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               Map<Long, Room> rooms = new HashMap<>();
@@ -197,9 +197,11 @@ public class AdminUsersActivity extends AppCompatActivity {
         email = v.findViewById(R.id.et_admin_user_email),
         phone = v.findViewById(R.id.et_admin_user_phone),
         pass = v.findViewById(R.id.et_admin_user_password);
+    MaterialCheckBox locked = v.findViewById(R.id.cb_admin_user_locked);
     name.setText(data.getFullName());
     email.setText(data.getEmail());
     phone.setText(data.getPhone());
+    locked.setChecked(Boolean.TRUE.equals(data.getLocked()));
     androidx.appcompat.app.AlertDialog dialog =
         new MaterialAlertDialogBuilder(this).setView(v).create();
     v.findViewById(R.id.btn_cancel).setOnClickListener(x -> dialog.dismiss());
@@ -226,7 +228,7 @@ public class AdminUsersActivity extends AppCompatActivity {
                 pass.setError("Mật khẩu phải có ít nhất 8 ký tự");
                 return;
               }
-              Executors.newSingleThreadExecutor()
+              AppExecutors.io()
                   .execute(
                       () -> {
                         try {
@@ -243,7 +245,27 @@ public class AdminUsersActivity extends AppCompatActivity {
                           }
                           repository.updateUser(
                               current.updated(n, e, p, pw.isEmpty() ? current.getPassword() : pw));
-                          RateLimiter.reset(this, data.getEmail());
+                          if (!data.getEmail().equalsIgnoreCase(e))
+                            RateLimiter.reset(this, data.getEmail());
+                          boolean wasLocked = Boolean.TRUE.equals(data.getLocked());
+                          if (locked.isChecked()) {
+                            RateLimiter.lock(this, e);
+                            if (!wasLocked)
+                              repository.insertNotification(
+                                  new AppNotification(
+                                      0,
+                                      current.getId(),
+                                      "account_locked_" + System.currentTimeMillis(),
+                                      "Tài khoản đã bị khóa",
+                                      "Tài khoản RoomGo của bạn đã bị quản trị viên khóa.",
+                                      "account",
+                                      null,
+                                      null,
+                                      false,
+                                      System.currentTimeMillis()));
+                          } else {
+                            RateLimiter.reset(this, e);
+                          }
                           runOnUiThread(
                               () -> {
                                 dialog.dismiss();
@@ -258,21 +280,6 @@ public class AdminUsersActivity extends AppCompatActivity {
     dialog.show();
   }
 
-  private void confirmUnlock(AdminUserData u) {
-    new MaterialAlertDialogBuilder(this)
-        .setTitle("Mở khóa tài khoản")
-        .setMessage("Mở khóa tài khoản \"" + u.getFullName() + "\"?")
-        .setPositiveButton(
-            "Mở khóa",
-            (d, w) -> {
-              RateLimiter.reset(this, u.getEmail());
-              toast("Mở khóa tài khoản thành công!");
-              load();
-            })
-        .setNegativeButton("Hủy", null)
-        .show();
-  }
-
   private void confirmDelete(AdminUserData u) {
     new MaterialAlertDialogBuilder(this)
         .setTitle("Xóa user")
@@ -280,7 +287,7 @@ public class AdminUsersActivity extends AppCompatActivity {
         .setPositiveButton(
             "Xóa",
             (d, w) ->
-                Executors.newSingleThreadExecutor()
+                AppExecutors.io()
                     .execute(
                         () -> {
                           User value = repository.getUserById(Long.parseLong(u.getId()));

@@ -57,7 +57,10 @@ public final class BookingRepository {
             request.getTotalPrice(),
             "pending",
             request.getPaymentMethod(),
-            System.currentTimeMillis());
+            System.currentTimeMillis(),
+            null,
+            0,
+            0);
     long id = bookingDao.insertBooking(value);
     return OperationResult.success(new BookingData(value.withId(id), String.valueOf(id)));
   }

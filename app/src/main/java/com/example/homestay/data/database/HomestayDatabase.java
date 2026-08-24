@@ -17,9 +17,10 @@ import com.example.homestay.data.entity.*;
       User.class,
       Favorite.class,
       AppNotification.class,
-      Review.class
+      Review.class,
+      RoomImage.class
     },
-    version = 13,
+    version = 16,
     exportSchema = false)
 public abstract class HomestayDatabase extends RoomDatabase {
   public abstract RoomDao roomDao();
@@ -36,6 +37,8 @@ public abstract class HomestayDatabase extends RoomDatabase {
 
   public abstract ReviewDao reviewDao();
 
+  public abstract RoomImageDao roomImageDao();
+
   private static volatile HomestayDatabase INSTANCE;
 
   public static HomestayDatabase getDatabase(Context context) {
@@ -51,7 +54,10 @@ public abstract class HomestayDatabase extends RoomDatabase {
                       MIGRATION_9_10,
                       MIGRATION_10_11,
                       MIGRATION_11_12,
-                      MIGRATION_12_13)
+                      MIGRATION_12_13,
+                      MIGRATION_13_14,
+                      MIGRATION_14_15,
+                      MIGRATION_15_16)
                   // Removed after Java repositories are moved to the shared IO executor.
                   .fallbackToDestructiveMigration()
                   .build();
@@ -121,5 +127,37 @@ public abstract class HomestayDatabase extends RoomDatabase {
       new Migration(12, 13) {
         @Override
         public void migrate(SupportSQLiteDatabase db) {}
+      };
+  static final Migration MIGRATION_13_14 =
+      new Migration(13, 14) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+          db.execSQL(
+              "CREATE TABLE IF NOT EXISTS room_images (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
+                  + " roomId INTEGER NOT NULL, imageUri TEXT NOT NULL, position INTEGER NOT NULL,"
+                  + " FOREIGN KEY(roomId) REFERENCES rooms(id) ON UPDATE NO ACTION ON DELETE CASCADE)");
+          db.execSQL("CREATE INDEX IF NOT EXISTS index_room_images_roomId ON room_images(roomId)");
+          db.execSQL(
+              "INSERT INTO room_images (roomId, imageUri, position) SELECT id, imageUrl, 0 FROM rooms"
+                  + " WHERE imageUrl != ''");
+        }
+      };
+  static final Migration MIGRATION_14_15 =
+      new Migration(14, 15) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+          db.execSQL("ALTER TABLE bookings ADD COLUMN cancellationReason TEXT");
+          db.execSQL("ALTER TABLE bookings ADD COLUMN cancelledAt INTEGER NOT NULL DEFAULT 0");
+          db.execSQL("ALTER TABLE bookings ADD COLUMN refundAmount REAL NOT NULL DEFAULT 0");
+        }
+      };
+  static final Migration MIGRATION_15_16 =
+      new Migration(15, 16) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+          // Các phiên bản cũ lưu ngày ở 00:00; chuyển sang 14:00 nhận và 12:00 trả phòng.
+          db.execSQL("UPDATE bookings SET checkInDate = checkInDate + 50400000");
+          db.execSQL("UPDATE bookings SET checkOutDate = checkOutDate + 43200000");
+        }
       };
 }

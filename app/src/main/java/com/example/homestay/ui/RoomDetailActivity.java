@@ -14,11 +14,16 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.*;
 import androidx.recyclerview.widget.*;
+import androidx.viewpager2.widget.ViewPager2;
 import com.example.homestay.*;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.model.CreateBookingRequest;
 import com.example.homestay.data.repository.*;
+import com.example.homestay.domain.BookingCalculator;
+import com.example.homestay.domain.BookingRules;
 import com.example.homestay.ui.adapter.*;
+import com.example.homestay.utils.DisplayFormatter;
+import com.example.homestay.utils.BookingTimeUtils;
 import com.example.homestay.utils.ImageLoader;
 import com.example.homestay.utils.SessionManager;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -41,6 +46,7 @@ public class RoomDetailActivity extends AppCompatActivity {
   private Room currentRoom;
   private SlotAdapter slotAdapter;
   private ReviewAdapter reviewAdapter;
+  private RoomImagePagerAdapter imageAdapter;
   private List<ReviewDisplayItem> reviews = Collections.emptyList();
   private boolean showAllReviews;
 
@@ -67,6 +73,7 @@ public class RoomDetailActivity extends AppCompatActivity {
     }
     ((MaterialToolbar) findViewById(R.id.toolbar)).setNavigationOnClickListener(v -> finish());
     setupLists();
+    setupImagePager();
     findViewById(R.id.btn_book).setOnClickListener(v -> book());
     loadData();
   }
@@ -88,10 +95,24 @@ public class RoomDetailActivity extends AppCompatActivity {
             });
   }
 
+  private void setupImagePager() {
+    imageAdapter = new RoomImagePagerAdapter();
+    ViewPager2 pager = findViewById(R.id.pager_room_images);
+    pager.setAdapter(imageAdapter);
+    pager.registerOnPageChangeCallback(
+        new ViewPager2.OnPageChangeCallback() {
+          @Override
+          public void onPageSelected(int position) {
+            updateImagePosition(position, imageAdapter.getItemCount());
+          }
+        });
+  }
+
   private void loadData() {
     executor.execute(
         () -> {
           Room room = repository.getRoomById(roomId);
+          List<RoomImage> roomImages = repository.getRoomImages(roomId);
           List<Slot> slots = repository.getSlotsByRoomIdNow(roomId);
           List<Review> values = repository.getReviewsByRoomNow(roomId);
           Map<Long, User> users = new HashMap<>();
@@ -108,7 +129,7 @@ public class RoomDetailActivity extends AppCompatActivity {
           }
           runOnUiThread(
               () -> {
-                if (room != null) displayRoom(room);
+                if (room != null) displayRoom(room, roomImages);
                 slotAdapter.submitList(slots);
                 reviews = display;
                 renderReviews();
@@ -137,10 +158,13 @@ public class RoomDetailActivity extends AppCompatActivity {
     b.setText(showAllReviews ? "Thu gọn đánh giá" : "Xem tất cả " + reviews.size() + " đánh giá");
   }
 
-  private void displayRoom(Room r) {
+  private void displayRoom(Room r, List<RoomImage> storedImages) {
     currentRoom = r;
-    ImageView image = findViewById(R.id.img_room);
-    ImageLoader.load(image, r.getImageUrl(), R.drawable.ic_room_placeholder);
+    List<String> images = new ArrayList<>();
+    for (RoomImage image : storedImages) images.add(image.getImageUri());
+    if (images.isEmpty()) images.add(r.getImageUrl());
+    imageAdapter.submitList(images);
+    updateImagePosition(0, images.size());
     text(R.id.tv_room_name, r.getName());
     text(R.id.tv_location, r.getLocation());
     text(R.id.tv_rating, String.format(Locale.getDefault(), "%.1f", r.getRating()));
@@ -167,7 +191,7 @@ public class RoomDetailActivity extends AppCompatActivity {
     }
     text(R.id.tv_area, r.getArea() + " m²");
     text(R.id.tv_max_guests, r.getMaxGuests() + " người");
-    String price = money(r.getPrice()) + " đ / đêm";
+    String price = DisplayFormatter.vnd(r.getPrice()) + " / đêm";
     text(R.id.tv_price, price);
     text(R.id.tv_bottom_price, price);
     TextView status = findViewById(R.id.tv_availability_status);
@@ -180,6 +204,17 @@ public class RoomDetailActivity extends AppCompatActivity {
     MaterialButton book = findViewById(R.id.btn_book);
     book.setEnabled(r.isAvailable());
     book.setText(r.isAvailable() ? "Đặt ngay" : "Không còn phòng");
+  }
+
+  private void updateImagePosition(int position, int count) {
+    text(R.id.tv_image_counter, (position + 1) + "/" + Math.max(1, count));
+    StringBuilder dots = new StringBuilder();
+    for (int i = 0; i < count; i++) {
+      if (i > 0) dots.append(' ');
+      dots.append(i == position ? '●' : '○');
+    }
+    text(R.id.tv_image_dots, dots.toString());
+    findViewById(R.id.tv_image_dots).setVisibility(count > 1 ? View.VISIBLE : View.GONE);
   }
 
   private void book() {
@@ -213,20 +248,19 @@ public class RoomDetailActivity extends AppCompatActivity {
         plus = v.findViewById(R.id.btn_guest_plus),
         confirm = v.findViewById(R.id.btn_confirm_booking);
     roomName.setText(room.getName());
-    roomPrice.setText(money(room.getPrice()) + " đ / đêm");
+    roomPrice.setText(DisplayFormatter.vnd(room.getPrice()) + " / đêm");
     long[] dates = {-1, -1};
     Slot[] selected = {null};
     SimpleDateFormat df = new SimpleDateFormat("EEE, dd MMM", new Locale("vi", "VN"));
     Runnable update =
         () -> {
           if (dates[0] >= 0 && dates[1] > dates[0]) {
-            long nights = (dates[1] - dates[0]) / 86400000L;
-            double pp =
-                selected[0] != null && selected[0].getPrice() != null && selected[0].getPrice() > 0
-                    ? selected[0].getPrice()
-                    : room.getPrice();
-            total.setText(money(pp * nights) + " đ");
-            summary.setText(nights + " đêm × " + money(pp) + " đ");
+            long nights = BookingCalculator.nights(dates[0], dates[1]);
+            double pp = BookingCalculator.nightlyPrice(room, selected[0]);
+            total.setText(
+                DisplayFormatter.vnd(
+                    BookingCalculator.total(room, selected[0], dates[0], dates[1])));
+            summary.setText(nights + " đêm × " + DisplayFormatter.vnd(pp));
             executor.execute(
                 () -> {
                   int available =
@@ -278,9 +312,8 @@ public class RoomDetailActivity extends AppCompatActivity {
                       this,
                       (p, y, m, d) -> {
                         Calendar c = Calendar.getInstance();
-                        c.set(y, m, d, 0, 0, 0);
-                        c.set(Calendar.MILLISECOND, 0);
-                        dates[0] = c.getTimeInMillis();
+                        dates[0] = BookingTimeUtils.checkInMillis(y, m, d);
+                        c.setTimeInMillis(dates[0]);
                         if (dates[1] <= dates[0]) dates[1] = -1;
                         inText.setText(df.format(c.getTime()));
                         update.run();
@@ -304,16 +337,15 @@ public class RoomDetailActivity extends AppCompatActivity {
                       this,
                       (p, y, m, d) -> {
                         Calendar value = Calendar.getInstance();
-                        value.set(y, m, d, 0, 0, 0);
-                        value.set(Calendar.MILLISECOND, 0);
-                        dates[1] = value.getTimeInMillis();
+                        dates[1] = BookingTimeUtils.checkOutMillis(y, m, d);
+                        value.setTimeInMillis(dates[1]);
                         outText.setText(df.format(value.getTime()));
                         update.run();
                       },
                       c.get(Calendar.YEAR),
                       c.get(Calendar.MONTH),
                       c.get(Calendar.DAY_OF_MONTH));
-              picker.getDatePicker().setMinDate(dates[0] + 86400000L);
+              picker.getDatePicker().setMinDate(dates[0] + BookingCalculator.MILLIS_PER_DAY);
               picker.show();
             });
     guests.addTextChangedListener(new SimpleWatcher(update));
@@ -330,31 +362,38 @@ public class RoomDetailActivity extends AppCompatActivity {
       TextInputEditText guests,
       long[] dates,
       Slot[] selected) {
+    int count = parseInt(text(guests), 1);
     if (dates[0] < 0) {
       toast("Vui lòng chọn ngày nhận phòng");
       return;
     }
-    if (dates[1] <= dates[0]) {
-      toast("Ngày trả phòng phải sau ngày nhận phòng");
+    String validation =
+        BookingRules.validate(
+            dates[0], dates[1], count, room.getMaxGuests(), 0, room.getMaxSlots(), startOfToday());
+    if (validation != null) {
+      toast(validation);
       return;
     }
-    int count = parseInt(text(guests), 1);
-    if (count < 1 || count > room.getMaxGuests()) {
-      toast("Số khách phải từ 1 đến " + room.getMaxGuests() + " người");
-      return;
-    }
-    long nights = (dates[1] - dates[0]) / 86400000L;
     button.setEnabled(false);
     button.setText("Đang xử lý...");
     executor.execute(
         () -> {
           int occupied = repository.countOverlappingBookings(room.getId(), dates[0], dates[1]);
-          if (occupied >= room.getMaxSlots()) {
+          String availabilityValidation =
+              BookingRules.validate(
+                  dates[0],
+                  dates[1],
+                  count,
+                  room.getMaxGuests(),
+                  occupied,
+                  room.getMaxSlots(),
+                  startOfToday());
+          if (availabilityValidation != null) {
             runOnUiThread(
                 () -> {
                   button.setEnabled(true);
                   button.setText("Xác nhận đặt phòng");
-                  toast("Phòng đã hết slot trong thời gian này");
+                  toast(availabilityValidation);
                 });
             return;
           }
@@ -367,17 +406,14 @@ public class RoomDetailActivity extends AppCompatActivity {
                 });
             return;
           }
-          double pp =
-              selected[0] != null && selected[0].getPrice() != null && selected[0].getPrice() > 0
-                  ? selected[0].getPrice()
-                  : room.getPrice();
+          double totalPrice = BookingCalculator.total(room, selected[0], dates[0], dates[1]);
           CreateBookingRequest request =
               new CreateBookingRequest(
                   String.valueOf(room.getId()),
                   dates[0],
                   dates[1],
                   count,
-                  pp * nights,
+                  totalPrice,
                   "pending",
                   null,
                   selected[0] == null ? null : String.valueOf(selected[0].getId()));
@@ -416,7 +452,7 @@ public class RoomDetailActivity extends AppCompatActivity {
         qr = v.findViewById(R.id.tv_qr_maintenance),
         total = v.findViewById(R.id.tv_total_payment);
     MaterialButton button = v.findViewById(R.id.btn_confirm_payment);
-    SimpleDateFormat f = new SimpleDateFormat("dd/MM/yyyy", new Locale("vi", "VN"));
+    SimpleDateFormat f = new SimpleDateFormat("dd/MM/yyyy · HH:mm", new Locale("vi", "VN"));
     if (currentRoom != null)
       info.setText(
           currentRoom.getName()
@@ -427,7 +463,7 @@ public class RoomDetailActivity extends AppCompatActivity {
               + "\n"
               + booking.getGuestCount()
               + " người");
-    total.setText(money(booking.getTotalPrice()) + " đ");
+    total.setText(DisplayFormatter.vnd(booking.getTotalPrice()));
     RadioGroup methods = v.findViewById(R.id.rg_payment_method);
     methods.setOnCheckedChangeListener(
         (g, id) -> {
@@ -457,10 +493,7 @@ public class RoomDetailActivity extends AppCompatActivity {
   }
 
   private void showSuccess(Booking b) {
-    String code =
-        "#RG"
-            + new SimpleDateFormat("yyMMdd", Locale.getDefault()).format(new Date(b.getCreatedAt()))
-            + String.format(Locale.ROOT, "%03d", b.getId());
+    String code = DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt());
     new MaterialAlertDialogBuilder(this)
         .setTitle("Đặt phòng thành công")
         .setMessage(
@@ -490,16 +523,21 @@ public class RoomDetailActivity extends AppCompatActivity {
     }
   }
 
+  private static long startOfToday() {
+    Calendar calendar = Calendar.getInstance();
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    return calendar.getTimeInMillis();
+  }
+
   private void text(int id, String s) {
     ((TextView) findViewById(id)).setText(s);
   }
 
   private static String text(TextInputEditText f) {
     return f.getText() == null ? "" : f.getText().toString();
-  }
-
-  private static String money(double n) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) n);
   }
 
   private void toast(String s) {

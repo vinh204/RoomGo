@@ -13,10 +13,10 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.homestay.data.entity.User;
 import com.example.homestay.ui.viewmodel.AuthViewModel;
 import com.example.homestay.utils.AdminAuth;
+import com.example.homestay.utils.AppExecutors;
 import com.example.homestay.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import java.util.concurrent.Executors;
 
 public class LoginActivity extends AppCompatActivity {
   private HomestayApplication app;
@@ -60,8 +60,7 @@ public class LoginActivity extends AppCompatActivity {
                 User user = result.user;
                 sessionManager.saveSession(
                     user.getId(), result.mongoUserId, user.getEmail(), user.getFullName());
-                Executors.newSingleThreadExecutor()
-                    .execute(() -> app.getRepository().refreshLocalRooms());
+                AppExecutors.io().execute(() -> app.getRepository().refreshLocalRooms());
                 Toast.makeText(this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                 navigateMain();
               } else
@@ -93,8 +92,7 @@ public class LoginActivity extends AppCompatActivity {
             return;
           }
           if (e.equalsIgnoreCase(AdminAuth.EMAIL)) {
-            if (AdminAuth.authenticate(e, p)) createAdminSession();
-            else Toast.makeText(this, "Email hoặc mật khẩu không đúng", Toast.LENGTH_SHORT).show();
+            loginAdmin(p);
             return;
           }
           viewModel.login(e, p);
@@ -103,12 +101,22 @@ public class LoginActivity extends AppCompatActivity {
         .setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
   }
 
-  private void createAdminSession() {
-    Executors.newSingleThreadExecutor()
+  private void loginAdmin(String password) {
+    AppExecutors.io()
         .execute(
             () -> {
-              User user = app.getRepository().getUserByEmail(AdminAuth.EMAIL);
-              if (user == null) {
+              User user = app.getRepository().login(AdminAuth.EMAIL, password);
+              boolean customized =
+                  getSharedPreferences("AdminSecurity", MODE_PRIVATE)
+                      .getBoolean("admin_password_customized", false);
+              if (user == null && !customized && AdminAuth.authenticate(AdminAuth.EMAIL, password)) {
+                user = app.getRepository().getUserByEmail(AdminAuth.EMAIL);
+                if (user != null) {
+                  app.getRepository().updateUser(user.withPassword(password));
+                  user = app.getRepository().getUserByEmail(AdminAuth.EMAIL);
+                }
+              }
+              if (user == null && !customized && AdminAuth.authenticate(AdminAuth.EMAIL, password)) {
                 long id =
                     app.getRepository()
                         .insertUser(
@@ -116,16 +124,26 @@ public class LoginActivity extends AppCompatActivity {
                                 0,
                                 AdminAuth.EMAIL,
                                 "admin-local",
-                                "AdminLocalSession@1",
+                                password,
                                 "Administrator",
                                 System.currentTimeMillis()));
                 user = app.getRepository().getUserById(id);
               }
-              if (user != null)
+              User authenticatedAdmin = user;
+              if (authenticatedAdmin != null)
                 sessionManager.saveSession(
-                    user.getId(), "local-admin", user.getEmail(), user.getFullName());
+                    authenticatedAdmin.getId(),
+                    "local-admin",
+                    authenticatedAdmin.getEmail(),
+                    authenticatedAdmin.getFullName());
               runOnUiThread(
                   () -> {
+                    if (authenticatedAdmin == null) {
+                      Toast.makeText(
+                              this, "Email hoặc mật khẩu không đúng", Toast.LENGTH_SHORT)
+                          .show();
+                      return;
+                    }
                     saveAdminSession();
                     navigateAdmin();
                   });

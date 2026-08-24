@@ -1,7 +1,9 @@
 package com.example.homestay;
 
 import android.app.DatePickerDialog;
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -10,12 +12,16 @@ import android.view.*;
 import android.widget.*;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.*;
 import androidx.recyclerview.widget.*;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.repository.*;
+import com.example.homestay.domain.RoomSearchEngine;
+import com.example.homestay.domain.BookingCalculator;
 import com.example.homestay.ui.RoomDetailActivity;
 import com.example.homestay.ui.adapter.*;
 import com.example.homestay.utils.*;
@@ -39,9 +45,10 @@ public class MainActivity extends AppCompatActivity {
   private SessionManager session;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   private final Set<Long> favorites = new HashSet<>();
+  private boolean accountLockDialogShown;
   private long checkIn = -1, checkOut = -1;
   private int guests = 1;
-  private Sort sort = Sort.RECOMMENDED;
+  private RoomSearchEngine.SortOrder sort = RoomSearchEngine.SortOrder.RECOMMENDED;
 
   @Override
   protected void onCreate(Bundle s) {
@@ -55,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     authRepository = app.getAuthRepository();
     bookingRepository = app.getBookingRepository();
     session = new SessionManager(this);
+    requestNotificationPermission();
     ViewCompat.setOnApplyWindowInsetsListener(
         findViewById(R.id.main),
         (v, i) -> {
@@ -143,7 +151,8 @@ public class MainActivity extends AppCompatActivity {
     executor.execute(
         () -> {
           repository.syncBookingNotifications(user);
-          List<AppNotification> values = repository.getNotificationsNow(user);
+          List<AppNotification> values = repository.getCustomerNotificationsNow(user);
+          SystemNotificationHelper.publishNew(this, values);
           int unread = 0;
           for (AppNotification n : values) if (!n.isRead()) unread++;
           int count = unread;
@@ -168,6 +177,15 @@ public class MainActivity extends AppCompatActivity {
   private void load(int layout) {
     content.removeAllViews();
     getLayoutInflater().inflate(layout, content, true);
+  }
+
+  private void requestNotificationPermission() {
+    if (android.os.Build.VERSION.SDK_INT >= 33
+        && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) {
+      ActivityCompat.requestPermissions(
+          this, new String[] {Manifest.permission.POST_NOTIFICATIONS}, 1201);
+    }
   }
 
   private void setupSearch() {
@@ -257,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
             v -> {
               checkIn = checkOut = -1;
               guests = 1;
-              sort = Sort.RECOMMENDED;
+              sort = RoomSearchEngine.SortOrder.RECOMMENDED;
               search.setText("");
               guestText.setText("1");
               inText.setText("Nhận phòng");
@@ -285,38 +303,9 @@ public class MainActivity extends AppCompatActivity {
           if (session.getUserId() != -1)
             favorites.addAll(repository.getFavoriteRoomIdsNow(session.getUserId()));
           List<Booking> bookings = repository.getAllBookingsNow();
-          List<Room> filtered = new ArrayList<>();
-          String key = query.trim().toLowerCase(Locale.ROOT);
-          for (Room r : all) {
-            if (!r.isAvailable() || r.getMaxGuests() < guests) continue;
-            if (!key.isEmpty()
-                && !(r.getName() + " " + r.getLocation() + " " + r.getAddress())
-                    .toLowerCase(Locale.ROOT)
-                    .contains(key)) continue;
-            if (checkIn >= 0 && checkOut > checkIn) {
-              int occupied = 0;
-              for (Booking b : bookings)
-                if (b.getRoomId() == r.getId()
-                    && ("pending".equals(b.getStatus()) || "confirmed".equals(b.getStatus()))
-                    && b.getCheckInDate() < checkOut
-                    && b.getCheckOutDate() > checkIn) occupied++;
-              if (occupied >= r.getMaxSlots()) continue;
-            }
-            filtered.add(r);
-          }
-          Comparator<Room> c =
-              sort == Sort.PRICE_LOW
-                  ? Comparator.comparingDouble(Room::getPrice)
-                  : sort == Sort.PRICE_HIGH
-                      ? (a, b) -> Double.compare(b.getPrice(), a.getPrice())
-                      : (a, b) -> Float.compare(b.getRating(), a.getRating());
-          filtered.sort(c);
-          Room special = null;
-          for (Room r : all)
-            if (r.isAvailable() && r.isFeatured()) {
-              special = r;
-              break;
-            }
+          List<Room> filtered =
+              RoomSearchEngine.filter(all, bookings, query, guests, checkIn, checkOut, sort);
+          Room special = RoomSearchEngine.featured(all);
           Room finalSpecial = special;
           runOnUiThread(
               () -> {
@@ -436,12 +425,24 @@ public class MainActivity extends AppCompatActivity {
     boolean preview =
         getSharedPreferences("AdminSession", MODE_PRIVATE).getBoolean("is_admin_logged_in", false);
     if (preview) {
-      name.setText("Administrator");
-      email.setText(AdminAuth.EMAIL);
-      phoneRow.setVisibility(View.GONE);
       membership.setText("Quản trị viên");
       edit.setVisibility(View.GONE);
       admin.setVisibility(View.VISIBLE);
+      executor.execute(
+          () -> {
+            User u = repository.getUserById(session.getUserId());
+            runOnUiThread(
+                () -> {
+                  name.setText(u == null ? "Administrator" : u.getFullName());
+                  email.setText(u == null ? AdminAuth.EMAIL : u.getEmail());
+                  if (u != null && u.getPhone() != null && !u.getPhone().trim().isEmpty()) {
+                    phone.setText(u.getPhone());
+                    phoneRow.setVisibility(View.VISIBLE);
+                  } else {
+                    phoneRow.setVisibility(View.GONE);
+                  }
+                });
+          });
     } else if (session.isLoggedIn()) {
       executor.execute(
           () -> {
@@ -559,24 +560,21 @@ public class MainActivity extends AppCompatActivity {
     TextView badge = v.findViewById(R.id.tv_detail_status);
     badge.setText(status);
     badge.setBackgroundTintList(ColorStateList.valueOf(statusColor(b.getStatus())));
-    String code =
-        "#RG"
-            + new SimpleDateFormat("yyMMdd", Locale.getDefault()).format(new Date(b.getCreatedAt()))
-            + String.format(Locale.ROOT, "%03d", b.getId());
+    String code = DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt());
     set(v, R.id.tv_detail_booking_code, "Mã đặt chỗ " + code);
     set(v, R.id.tv_detail_room_name, r == null ? "Phòng không còn tồn tại" : r.getName());
     set(
         v,
         R.id.tv_detail_location,
         r == null ? "Không có thông tin địa chỉ" : r.getLocation() + " · " + r.getAddress());
-    SimpleDateFormat d = new SimpleDateFormat("dd/MM/yyyy", new Locale("vi", "VN")),
+    SimpleDateFormat d = new SimpleDateFormat("dd/MM/yyyy · HH:mm", new Locale("vi", "VN")),
         dt = new SimpleDateFormat("dd/MM/yyyy, HH:mm", new Locale("vi", "VN"));
     set(v, R.id.tv_detail_check_in, d.format(new Date(b.getCheckInDate())));
     set(v, R.id.tv_detail_check_out, d.format(new Date(b.getCheckOutDate())));
     set(
         v,
         R.id.tv_detail_nights,
-        Math.max(1, (b.getCheckOutDate() - b.getCheckInDate()) / 86400000L) + " đêm");
+        Math.max(1, BookingCalculator.nights(b.getCheckInDate(), b.getCheckOutDate())) + " đêm");
     set(v, R.id.tv_detail_guests, "Khách lưu trú: " + b.getGuestCount() + " người · 1 phòng");
     set(
         v,
@@ -586,7 +584,7 @@ public class MainActivity extends AppCompatActivity {
                 ? "Khi nhận phòng"
                 : "Chưa chọn phương thức"));
     set(v, R.id.tv_detail_created, "Thời gian đặt: " + dt.format(new Date(b.getCreatedAt())));
-    set(v, R.id.tv_detail_total, money(b.getTotalPrice()) + " đ");
+    set(v, R.id.tv_detail_total, DisplayFormatter.vnd(b.getTotalPrice()));
     MaterialButton room = v.findViewById(R.id.btn_detail_view_room);
     room.setEnabled(r != null);
     room.setOnClickListener(
@@ -602,8 +600,98 @@ public class MainActivity extends AppCompatActivity {
           dialog.dismiss();
           showReview(item);
         });
+    MaterialButton cancel = v.findViewById(R.id.btn_detail_cancel_booking);
+    boolean cancellable =
+        ("pending".equals(b.getStatus()) || "confirmed".equals(b.getStatus()))
+            && System.currentTimeMillis() < b.getCheckInDate();
+    cancel.setVisibility(cancellable ? View.VISIBLE : View.GONE);
+    cancel.setOnClickListener(
+        x -> {
+          dialog.dismiss();
+          showCancelBooking(item);
+        });
+    TextView cancellation = v.findViewById(R.id.tv_detail_cancellation);
+    if ("cancelled".equals(b.getStatus())) {
+      cancellation.setVisibility(View.VISIBLE);
+      cancellation.setText(
+          "Lý do hủy: "
+              + (b.getCancellationReason() == null ? "Không có thông tin" : b.getCancellationReason())
+              + (b.getCancelledAt() > 0
+                  ? "\nThời gian hủy: " + dt.format(new Date(b.getCancelledAt()))
+                  : "")
+              + "\nKhoản hoàn: "
+              + DisplayFormatter.vnd(b.getRefundAmount()));
+    }
     v.findViewById(R.id.btn_detail_close).setOnClickListener(x -> dialog.dismiss());
     dialog.show();
+  }
+
+  private void showCancelBooking(BookingWithRoom item) {
+    Booking booking = item.getBooking();
+    long now = System.currentTimeMillis();
+    if (!("pending".equals(booking.getStatus()) || "confirmed".equals(booking.getStatus()))
+        || now >= booking.getCheckInDate()) {
+      toast("Booking này không thể hủy");
+      return;
+    }
+    long remaining = booking.getCheckInDate() - now;
+    double refund = remaining >= 24L * 60 * 60 * 1000 ? booking.getTotalPrice() : booking.getTotalPrice() * 0.5;
+    String[] reasons = {"Thay đổi kế hoạch", "Đặt nhầm ngày", "Tìm được phòng khác", "Lý do khác"};
+    LinearLayout content = new LinearLayout(this);
+    content.setOrientation(LinearLayout.VERTICAL);
+    int padding = (int) (20 * getResources().getDisplayMetrics().density);
+    content.setPadding(padding, 0, padding, 0);
+    TextView summary = new TextView(this);
+    summary.setText(
+        (item.getRoom() == null ? "Phòng đã đặt" : item.getRoom().getName())
+            + "\n"
+            + DisplayFormatter.bookingCode(booking.getId(), booking.getCreatedAt())
+            + "\nKhoản hoàn dự kiến: "
+            + DisplayFormatter.vnd(refund));
+    summary.setTextSize(15);
+    summary.setTextColor(getColor(R.color.home_text));
+    content.addView(summary);
+    RadioGroup group = new RadioGroup(this);
+    for (String reason : reasons) {
+      RadioButton option = new RadioButton(this);
+      option.setId(View.generateViewId());
+      option.setText(reason);
+      option.setTextSize(15);
+      group.addView(option);
+    }
+    group.check(group.getChildAt(0).getId());
+    content.addView(group);
+    TextInputEditText other = new TextInputEditText(this);
+    other.setHint("Nhập lý do khác");
+    other.setVisibility(View.GONE);
+    content.addView(other);
+    group.setOnCheckedChangeListener(
+        (g, checked) -> other.setVisibility(g.indexOfChild(g.findViewById(checked)) == 3 ? View.VISIBLE : View.GONE));
+    new MaterialAlertDialogBuilder(this)
+        .setTitle("Hủy đặt chỗ")
+        .setView(content)
+        .setNegativeButton("Quay lại", null)
+        .setPositiveButton(
+            "Xác nhận hủy",
+            (dialog, which) -> {
+              int selected = group.indexOfChild(group.findViewById(group.getCheckedRadioButtonId()));
+              String reason = selected == 3 ? text(other).trim() : reasons[Math.max(0, selected)];
+              if (reason.isEmpty()) reason = "Lý do khác";
+              String finalReason = reason;
+              executor.execute(
+                  () -> {
+                    Booking current = repository.getBookingById(booking.getId());
+                    if (current != null)
+                      repository.updateBooking(current.cancelled(finalReason, refund, System.currentTimeMillis()));
+                    runOnUiThread(
+                        () -> {
+                          toast("Đã hủy đặt chỗ. Khoản hoàn dự kiến: " + DisplayFormatter.vnd(refund));
+                          setupBookings();
+                          refreshBadge();
+                        });
+                  });
+            })
+        .show();
   }
 
   private void showReview(BookingWithRoom item) {
@@ -657,7 +745,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void showSort(Runnable reload) {
-    Sort[] values = Sort.values();
+    RoomSearchEngine.SortOrder[] values = RoomSearchEngine.SortOrder.values();
     String[] labels = new String[values.length];
     int selected = 0;
     for (int i = 0; i < values.length; i++) {
@@ -683,10 +771,10 @@ public class MainActivity extends AppCompatActivity {
         new DatePickerDialog(
             this,
             (v, y, m, d) -> {
-              Calendar x = Calendar.getInstance();
-              x.set(y, m, d, 0, 0, 0);
-              x.set(Calendar.MILLISECOND, 0);
-              action.accept(x.getTimeInMillis());
+              action.accept(
+                  checkout
+                      ? BookingTimeUtils.checkOutMillis(y, m, d)
+                      : BookingTimeUtils.checkInMillis(y, m, d));
             },
             c.get(Calendar.YEAR),
             c.get(Calendar.MONTH),
@@ -707,10 +795,6 @@ public class MainActivity extends AppCompatActivity {
 
   private static void set(View v, int id, String s) {
     ((TextView) v.findViewById(id)).setText(s);
-  }
-
-  private static String money(double n) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) n);
   }
 
   private void toast(String s) {
@@ -756,6 +840,7 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onResume() {
     super.onResume();
+    if (enforceAccountLock()) return;
     if (nav != null) {
       int id = nav.getSelectedItemId();
       if (id == R.id.navigation_search) {
@@ -775,22 +860,38 @@ public class MainActivity extends AppCompatActivity {
     refreshBadge();
   }
 
+  private boolean enforceAccountLock() {
+    boolean adminPreview =
+        getSharedPreferences("AdminSession", MODE_PRIVATE).getBoolean("is_admin_logged_in", false);
+    if (adminPreview || !session.isLoggedIn() || session.getUserEmail() == null) return false;
+    RateLimiter.AttemptStatus status =
+        RateLimiter.canAttemptLogin(this, session.getUserEmail());
+    if (status.allowed) return false;
+    if (!accountLockDialogShown) {
+      accountLockDialogShown = true;
+      session.clearSession();
+      new MaterialAlertDialogBuilder(this)
+          .setTitle("Tài khoản đã bị khóa")
+          .setMessage(
+              "Tài khoản của bạn đã bị quản trị viên khóa. Bạn sẽ được đưa về màn hình đăng nhập.")
+          .setCancelable(false)
+          .setPositiveButton(
+              "Đến trang đăng nhập",
+              (dialog, which) -> {
+                Intent intent = new Intent(this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+              })
+          .show();
+    }
+    return true;
+  }
+
   @Override
   protected void onDestroy() {
     executor.shutdownNow();
     super.onDestroy();
-  }
-
-  private enum Sort {
-    RECOMMENDED("Đề xuất"),
-    PRICE_LOW("Giá thấp nhất"),
-    PRICE_HIGH("Giá cao nhất"),
-    RATING("Đánh giá tốt");
-    final String label;
-
-    Sort(String l) {
-      label = l;
-    }
   }
 
   private interface LongConsumer {

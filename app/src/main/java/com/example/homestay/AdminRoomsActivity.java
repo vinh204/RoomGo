@@ -1,9 +1,11 @@
 package com.example.homestay;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.*;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 import androidx.activity.result.ActivityResultLauncher;
@@ -23,7 +25,6 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import java.text.*;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class AdminRoomsActivity extends AppCompatActivity {
   private HomestayRepository repository;
@@ -32,8 +33,8 @@ public class AdminRoomsActivity extends AppCompatActivity {
   private final List<AdminRoomData> rooms = new ArrayList<>();
   private List<Booking> bookings = Collections.emptyList();
   private Boolean availableFilter;
-  private TextInputEditText imageField;
-  private ImageView imagePreview;
+  private final List<String> selectedImageUris = new ArrayList<>();
+  private Fields activeImageFields;
   private ActivityResultLauncher<String[]> imagePicker;
 
   @Override
@@ -41,16 +42,20 @@ public class AdminRoomsActivity extends AppCompatActivity {
     super.onCreate(s);
     imagePicker =
         registerForActivityResult(
-            new ActivityResultContracts.OpenDocument(),
-            uri -> {
-              if (uri == null) return;
-              try {
-                getContentResolver()
-                    .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-              } catch (Exception ignored) {
+            new ActivityResultContracts.OpenMultipleDocuments(),
+            uris -> {
+              if (uris == null || activeImageFields == null) return;
+              for (Uri uri : uris) {
+                if (selectedImageUris.size() >= 10) break;
+                try {
+                  getContentResolver()
+                      .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Exception ignored) {
+                }
+                String value = uri.toString();
+                if (!selectedImageUris.contains(value)) selectedImageUris.add(value);
               }
-              if (imageField != null) imageField.setText(uri.toString());
-              if (imagePreview != null) loadImage(imagePreview, uri.toString());
+              renderSelectedImages(activeImageFields);
             });
     setContentView(R.layout.activity_admin_rooms);
     SystemBarUtils.keepContentBelowStatusBar(this);
@@ -102,7 +107,7 @@ public class AdminRoomsActivity extends AppCompatActivity {
 
   private void load() {
     progress.setVisibility(View.VISIBLE);
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               bookings = repository.getAllBookingsNow();
@@ -168,6 +173,8 @@ public class AdminRoomsActivity extends AppCompatActivity {
   private void showDialog(AdminRoomData room) {
     View view = getLayoutInflater().inflate(R.layout.dialog_add_edit_room, null);
     Fields f = new Fields(view);
+    activeImageFields = f;
+    selectedImageUris.clear();
     ((TextView) view.findViewById(R.id.tv_dialog_title))
         .setText(room == null ? "Thêm phòng mới" : "Chỉnh sửa phòng");
     if (room != null) {
@@ -176,8 +183,6 @@ public class AdminRoomsActivity extends AppCompatActivity {
       f.price.setText(String.valueOf(room.getPrice()));
       f.capacity.setText(String.valueOf(room.getCapacity()));
       f.slots.setText(String.valueOf(room.getMaxSlots()));
-      f.image.setText(room.getImageUrl());
-      loadImage(f.preview, room.getImageUrl());
       f.type.setText(room.getRoomType());
       f.location.setText(room.getLocation());
       f.address.setText(room.getAddress());
@@ -185,17 +190,41 @@ public class AdminRoomsActivity extends AppCompatActivity {
       f.amenities.setText(room.getAmenities());
       f.available.setChecked(room.isAvailable());
       f.featured.setChecked(room.isFeatured());
+      AppExecutors.io()
+          .execute(
+              () -> {
+                List<RoomImage> stored = repository.getRoomImages(Long.parseLong(room.getId()));
+                List<String> values = new ArrayList<>();
+                for (RoomImage image : stored) values.add(image.getImageUri());
+                if (values.isEmpty() && !room.getImageUrl().trim().isEmpty())
+                  values.add(room.getImageUrl());
+                runOnUiThread(
+                    () -> {
+                      if (activeImageFields != f) return;
+                      selectedImageUris.clear();
+                      selectedImageUris.addAll(values);
+                      renderSelectedImages(f);
+                    });
+              });
     }
+    renderSelectedImages(f);
     view.findViewById(R.id.btn_select_room_image)
         .setOnClickListener(
             v -> {
-              imageField = f.image;
-              imagePreview = f.preview;
+              activeImageFields = f;
               imagePicker.launch(new String[] {"image/*"});
             });
     AlertDialog dialog =
         new MaterialAlertDialogBuilder(this).setView(view).setCancelable(true).create();
-    view.findViewById(R.id.btn_cancel).setOnClickListener(v -> dialog.dismiss());
+    dialog.setOnDismissListener(ignored -> {
+      if (activeImageFields == f) activeImageFields = null;
+    });
+    view.findViewById(R.id.btn_cancel)
+        .setOnClickListener(
+            v -> {
+              activeImageFields = null;
+              dialog.dismiss();
+            });
     view.findViewById(R.id.btn_save).setOnClickListener(v -> save(room, f, dialog));
     dialog.show();
   }
@@ -203,11 +232,11 @@ public class AdminRoomsActivity extends AppCompatActivity {
   private void save(AdminRoomData existing, Fields f, AlertDialog dialog) {
     String name = text(f.name).trim(),
         description = text(f.description).trim(),
-        image = text(f.image).trim();
+        image = selectedImageUris.isEmpty() ? "" : selectedImageUris.get(0);
     Double price = number(text(f.price));
     Integer capacity = integer(text(f.capacity)), slots = integer(text(f.slots));
-    if (!validImage(image)) {
-      f.image.setError("Ảnh không hợp lệ, vui lòng chọn lại từ thiết bị");
+    if (selectedImageUris.isEmpty()) {
+      toast("Vui lòng chọn ít nhất một ảnh phòng");
       return;
     }
     if (name.isEmpty() || price == null || capacity == null) {
@@ -219,13 +248,15 @@ public class AdminRoomsActivity extends AppCompatActivity {
       return;
     }
     int area = integer(text(f.area)) == null ? 0 : integer(text(f.area));
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               try {
                 if (f.featured.isChecked()) repository.clearFeaturedRooms();
-                if (existing == null)
-                  repository.insertRoom(
+                long roomId;
+                if (existing == null) {
+                  roomId =
+                      repository.insertRoom(
                       new Room(
                           0,
                           null,
@@ -244,7 +275,8 @@ public class AdminRoomsActivity extends AppCompatActivity {
                           slots,
                           f.available.isChecked(),
                           f.featured.isChecked()));
-                else {
+                } else {
+                  roomId = Long.parseLong(existing.getId());
                   Room current = repository.getRoomById(Long.parseLong(existing.getId()));
                   if (current != null)
                     repository.updateRoom(
@@ -263,8 +295,10 @@ public class AdminRoomsActivity extends AppCompatActivity {
                             f.available.isChecked(),
                             f.featured.isChecked()));
                 }
+                repository.replaceRoomImages(roomId, new ArrayList<>(selectedImageUris));
                 runOnUiThread(
                     () -> {
+                      activeImageFields = null;
                       dialog.dismiss();
                       toast(
                           existing == null
@@ -285,7 +319,7 @@ public class AdminRoomsActivity extends AppCompatActivity {
         .setPositiveButton(
             "Xóa",
             (d, w) ->
-                Executors.newSingleThreadExecutor()
+                AppExecutors.io()
                     .execute(
                         () -> {
                           Room value = repository.getRoomById(Long.parseLong(room.getId()));
@@ -305,7 +339,8 @@ public class AdminRoomsActivity extends AppCompatActivity {
   }
 
   private void details(AdminRoomData r) {
-    String price = money(r.getPrice()), revenue = money(r.getRevenue());
+    String price = DisplayFormatter.number(r.getPrice()),
+        revenue = DisplayFormatter.number(r.getRevenue());
     new MaterialAlertDialogBuilder(this)
         .setTitle(r.getName())
         .setMessage(
@@ -325,7 +360,7 @@ public class AdminRoomsActivity extends AppCompatActivity {
                 + r.getArea()
                 + " m²\nSức chứa: "
                 + r.getCapacity()
-                + " người\nSố slot: "
+                + " người\nSố lượng phòng: "
                 + r.getMaxSlots()
                 + "\nĐánh giá: "
                 + r.getRating()
@@ -361,6 +396,64 @@ public class AdminRoomsActivity extends AppCompatActivity {
     ImageLoader.load(v, data, R.drawable.ic_room_placeholder);
   }
 
+  private void renderSelectedImages(Fields fields) {
+    fields.images.removeAllViews();
+    fields.imageCount.setText(selectedImageUris.size() + "/10 ảnh");
+    if (selectedImageUris.isEmpty()) {
+      loadImage(fields.preview, "");
+      return;
+    }
+    loadImage(fields.preview, selectedImageUris.get(0));
+    for (int index = 0; index < selectedImageUris.size(); index++) {
+      String uri = selectedImageUris.get(index);
+      FrameLayout frame = new FrameLayout(this);
+      LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(dp(88), dp(88));
+      frameParams.setMarginEnd(dp(8));
+      frame.setLayoutParams(frameParams);
+      ImageView thumbnail = new ImageView(this);
+      thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);
+      thumbnail.setBackgroundColor(getColor(R.color.home_divider));
+      frame.addView(thumbnail, new FrameLayout.LayoutParams(-1, -1));
+      loadImage(thumbnail, uri);
+      TextView remove = new TextView(this);
+      remove.setText("×");
+      remove.setTextColor(Color.WHITE);
+      remove.setTextSize(18);
+      remove.setGravity(Gravity.CENTER);
+      remove.setBackgroundResource(R.drawable.bg_image_counter);
+      FrameLayout.LayoutParams removeParams =
+          new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.TOP | Gravity.END);
+      frame.addView(remove, removeParams);
+      remove.setOnClickListener(
+          view -> {
+            selectedImageUris.remove(uri);
+            renderSelectedImages(fields);
+          });
+      if (index == 0) {
+        TextView cover = new TextView(this);
+        cover.setText("Ảnh bìa");
+        cover.setTextColor(Color.WHITE);
+        cover.setTextSize(10);
+        cover.setPadding(dp(6), dp(2), dp(6), dp(2));
+        cover.setBackgroundResource(R.drawable.bg_image_counter);
+        frame.addView(
+            cover,
+            new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.START));
+      }
+      frame.setOnClickListener(
+          view -> {
+            selectedImageUris.remove(uri);
+            selectedImageUris.add(0, uri);
+            renderSelectedImages(fields);
+          });
+      fields.images.addView(frame);
+    }
+  }
+
+  private int dp(int value) {
+    return Math.round(value * getResources().getDisplayMetrics().density);
+  }
+
   private static String text(TextInputEditText f) {
     return f.getText() == null ? "" : f.getText().toString();
   }
@@ -385,10 +478,6 @@ public class AdminRoomsActivity extends AppCompatActivity {
     }
   }
 
-  private static String money(double n) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) n);
-  }
-
   private void toast(String s) {
     Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
   }
@@ -406,6 +495,8 @@ public class AdminRoomsActivity extends AppCompatActivity {
         area,
         amenities;
     final ImageView preview;
+    final LinearLayout images;
+    final TextView imageCount;
     final MaterialSwitch available, featured;
 
     Fields(View v) {
@@ -416,6 +507,8 @@ public class AdminRoomsActivity extends AppCompatActivity {
       slots = v.findViewById(R.id.et_room_max_slots);
       image = v.findViewById(R.id.et_room_image_url);
       preview = v.findViewById(R.id.iv_room_image_preview);
+      images = v.findViewById(R.id.room_images_container);
+      imageCount = v.findViewById(R.id.tv_room_image_count);
       type = v.findViewById(R.id.et_room_type);
       location = v.findViewById(R.id.et_room_location);
       address = v.findViewById(R.id.et_room_address);

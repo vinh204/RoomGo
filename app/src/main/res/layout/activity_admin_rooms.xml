@@ -40,12 +40,12 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_rooms" android:layout_width="match_parent" android:layout_height="match_parent"
         android:clipToPadding="false" android:paddingStart="16dp" android:paddingTop="6dp"
-        android:paddingEnd="16dp" android:paddingBottom="96dp"
+        android:paddingEnd="16dp" android:paddingBottom="128dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_room" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end" android:layout_marginEnd="20dp" android:layout_marginBottom="88dp" android:contentDescription="Thêm phòng"
+        android:layout_gravity="bottom|end" android:layout_marginEnd="20dp" android:layout_marginBottom="112dp" android:contentDescription="Thêm phòng"
         android:src="@drawable/ic_add_admin" app:backgroundTint="@color/home_primary" app:tint="@android:color/white" />
     <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:visibility="gone" />
     <TextView android:id="@+id/tv_empty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Chưa có phòng phù hợp" android:textColor="@color/home_subtitle" android:visibility="gone" />

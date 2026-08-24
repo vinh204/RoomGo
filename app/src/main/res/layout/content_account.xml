@@ -44,6 +44,15 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <ImageView
+                    android:id="@+id/iv_user_avatar"
+                    android:layout_width="76dp"
+                    android:layout_height="76dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="12dp"
+                    android:contentDescription="@string/user_avatar"
+                    android:src="@drawable/ic_user_avatar_default" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

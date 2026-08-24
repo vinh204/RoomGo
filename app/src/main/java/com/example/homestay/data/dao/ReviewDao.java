@@ -6,6 +6,9 @@ import java.util.List;
 
 @Dao
 public interface ReviewDao {
+  @Query("SELECT * FROM reviews ORDER BY updatedAt DESC")
+  List<Review> getAllNow();
+
   @Query("SELECT * FROM reviews WHERE roomId=:id AND isVisible=1 ORDER BY updatedAt DESC")
   List<Review> getByRoomNow(long id);
 

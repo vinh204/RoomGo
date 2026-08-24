@@ -17,9 +17,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import java.text.*;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class AdminBookingsActivity extends AppCompatActivity {
+  public static final String EXTRA_BOOKING_CODE = "booking_code";
+
   private HomestayRepository repository;
   private AdminBookingAdapter adapter;
   private ProgressBar progress;
@@ -39,6 +40,9 @@ public class AdminBookingsActivity extends AppCompatActivity {
       getSupportActionBar().setTitle("Quản lý đặt chỗ");
     }
     setup();
+    String bookingCode = getIntent().getStringExtra(EXTRA_BOOKING_CODE);
+    if (bookingCode != null)
+      ((TextInputEditText) findViewById(R.id.et_admin_search)).setText(bookingCode);
     AdminNavigationUtils.setup(this, R.id.admin_nav_bookings);
     load();
   }
@@ -80,7 +84,7 @@ public class AdminBookingsActivity extends AppCompatActivity {
 
   private void load() {
     progress.setVisibility(View.VISIBLE);
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               try {
@@ -143,9 +147,8 @@ public class AdminBookingsActivity extends AppCompatActivity {
                 .trim()
                 .toLowerCase(Locale.ROOT);
     List<AdminBookingData> out = new ArrayList<>();
-    SimpleDateFormat code = new SimpleDateFormat("yyMMdd", Locale.getDefault());
     for (AdminBookingData b : bookings) {
-      String value = "RG" + code.format(new Date(b.getCreatedAt())) + pad(b.getId());
+      String value = DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt());
       String user =
           b.getUser() == null ? "" : b.getUser().getFullName() + " " + b.getUser().getEmail();
       String room = b.getRoom() == null ? "" : b.getRoom().getName();
@@ -182,15 +185,63 @@ public class AdminBookingsActivity extends AppCompatActivity {
             labels.toArray(new String[0]),
             -1,
             (d, w) -> {
-              updateStatus(b.getId(), values.get(w));
+              if ("cancelled".equals(values.get(w))) showAdminCancellation(b);
+              else updateStatus(b.getId(), values.get(w));
               d.dismiss();
             })
         .setNegativeButton("Hủy", null)
         .show();
   }
 
+  private void showAdminCancellation(AdminBookingData data) {
+    TextInputEditText reason = new TextInputEditText(this);
+    reason.setHint("Lý do hủy từ quản trị viên");
+    reason.setText("Phòng không thể tiếp nhận khách");
+    int padding = (int) (24 * getResources().getDisplayMetrics().density);
+    android.widget.FrameLayout wrapper = new android.widget.FrameLayout(this);
+    wrapper.setPadding(padding, 0, padding, 0);
+    wrapper.addView(reason);
+    new MaterialAlertDialogBuilder(this)
+        .setTitle("Hủy booking")
+        .setMessage("Khách hàng sẽ nhận được thông báo kèm lý do và khoản hoàn dự kiến.")
+        .setView(wrapper)
+        .setNegativeButton("Quay lại", null)
+        .setPositiveButton(
+            "Xác nhận hủy",
+            (dialog, which) -> {
+              String value =
+                  reason.getText() == null ? "Hủy bởi quản trị viên" : reason.getText().toString().trim();
+              if (value.isEmpty()) value = "Hủy bởi quản trị viên";
+              cancelByAdmin(data.getId(), value);
+            })
+        .show();
+  }
+
+  private void cancelByAdmin(String id, String reason) {
+    AppExecutors.io()
+        .execute(
+            () -> {
+              Booking booking = repository.getBookingById(Long.parseLong(id));
+              if (booking != null) {
+                long remaining = booking.getCheckInDate() - System.currentTimeMillis();
+                double refund =
+                    remaining >= 24L * 60 * 60 * 1000
+                        ? booking.getTotalPrice()
+                        : remaining > 0 ? booking.getTotalPrice() * 0.5 : 0;
+                repository.updateBooking(
+                    booking.cancelled(
+                        "Quản trị viên: " + reason, refund, System.currentTimeMillis()));
+              }
+              runOnUiThread(
+                  () -> {
+                    toast("Đã hủy booking và gửi thông báo cho khách");
+                    load();
+                  });
+            });
+  }
+
   private void updateStatus(String id, String status) {
-    Executors.newSingleThreadExecutor()
+    AppExecutors.io()
         .execute(
             () -> {
               Booking b = repository.getBookingById(Long.parseLong(id));
@@ -210,7 +261,7 @@ public class AdminBookingsActivity extends AppCompatActivity {
         .setPositiveButton(
             "Xóa",
             (d, w) ->
-                Executors.newSingleThreadExecutor()
+                AppExecutors.io()
                     .execute(
                         () -> {
                           Booking value = repository.getBookingById(Long.parseLong(b.getId()));
@@ -226,15 +277,15 @@ public class AdminBookingsActivity extends AppCompatActivity {
   }
 
   private void showDetails(AdminBookingData b) {
-    SimpleDateFormat f = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("vi", "VN")),
-        code = new SimpleDateFormat("yyMMdd", Locale.getDefault());
-    long nights = Math.max(1, (b.getCheckOutDate() - b.getCheckInDate()) / 86400000L);
+    SimpleDateFormat f = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("vi", "VN"));
+    long nights =
+        Math.max(1, com.example.homestay.domain.BookingCalculator.nights(b.getCheckInDate(), b.getCheckOutDate()));
     String room = b.getRoom() == null ? "N/A" : b.getRoom().getName(),
         user = b.getUser() == null ? "N/A" : b.getUser().getFullName(),
         email = b.getUser() == null ? "N/A" : b.getUser().getEmail(),
         phone = b.getUser() == null ? "N/A" : b.getUser().getPhone();
     new MaterialAlertDialogBuilder(this)
-        .setTitle("Chi tiết #RG" + code.format(new Date(b.getCreatedAt())) + pad(b.getId()))
+        .setTitle("Chi tiết " + DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt()))
         .setMessage(
             "Phòng: "
                 + room
@@ -259,11 +310,6 @@ public class AdminBookingsActivity extends AppCompatActivity {
                 + b.getStatus())
         .setPositiveButton("Đóng", null)
         .show();
-  }
-
-  private static String pad(String s) {
-    while (s.length() < 3) s = "0" + s;
-    return s;
   }
 
   private void toast(String s) {

@@ -185,6 +185,32 @@
             app:strokeWidth="1dp" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_detail_cancel_booking"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:paddingVertical="12dp"
+            android:text="Hủy đặt chỗ"
+            android:textColor="#D14343"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:cornerRadius="22dp"
+            app:strokeColor="#D14343"
+            app:strokeWidth="1dp" />
+
+        <TextView
+            android:id="@+id/tv_detail_cancellation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#FFF3F2"
+            android:padding="12dp"
+            android:textColor="#A83232"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_detail_close"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent"

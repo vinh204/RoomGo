@@ -43,10 +43,18 @@ public final class AuthViewModel extends ViewModel {
       RateLimiter.AttemptStatus status = RateLimiter.canAttemptLogin(context, email);
       if (!status.allowed && status.lockedUntil != null) {
         long seconds = RateLimiter.getLockedSecondsRemaining(context, email);
+        boolean adminLocked = seconds > 365L * 24 * 60 * 60;
         String time = seconds < 60 ? seconds + " giây" : (seconds / 60) + " phút";
         loginResult.setValue(
             new AuthResult(
-                false, null, null, "Vui lòng thử lại sau " + time + ".", null, status.lockedUntil));
+                false,
+                null,
+                null,
+                adminLocked
+                    ? "Tài khoản đã bị quản trị viên khóa. Vui lòng liên hệ RoomGo để được hỗ trợ."
+                    : "Tài khoản tạm khóa. Vui lòng thử lại sau " + time + ".",
+                null,
+                status.lockedUntil));
         return;
       }
     }

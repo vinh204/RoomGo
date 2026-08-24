@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">RoomGo</string>
+    <string name="admin_dashboard_title">Quản trị RoomGo</string>
+    <string name="admin_overview_today">Tổng quan</string>
+    <string name="admin_overview_subtitle">Theo dõi nhanh hoạt động của RoomGo</string>
+    <string name="admin_rooms_count_placeholder">0\nPhòng</string>
+    <string name="admin_users_count_placeholder">0\nNgười dùng</string>
+    <string name="admin_pending_count_placeholder">0\nChờ duyệt</string>
+    <string name="admin_revenue">Doanh thu</string>
+    <string name="admin_revenue_actual">Đã thu</string>
+    <string name="admin_revenue_expected">Tổng giá trị booking</string>
+    <string name="admin_occupancy">Tỷ lệ lấp đầy</string>
+    <string name="admin_recent_bookings">Đặt chỗ gần đây</string>
+    <string name="admin_account">Tài khoản quản trị</string>
+    <string name="user_avatar">Ảnh đại diện người dùng</string>
 </resources>

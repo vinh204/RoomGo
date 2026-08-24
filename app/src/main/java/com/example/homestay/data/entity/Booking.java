@@ -29,6 +29,9 @@ public class Booking {
   @NonNull final String status;
   final String paymentMethod;
   final long createdAt;
+  final String cancellationReason;
+  final long cancelledAt;
+  final double refundAmount;
 
   public Booking(
       long id,
@@ -45,7 +48,10 @@ public class Booking {
       double totalPrice,
       String status,
       @Nullable String paymentMethod,
-      long createdAt) {
+      long createdAt,
+      @Nullable String cancellationReason,
+      long cancelledAt,
+      double refundAmount) {
     this.id = id;
     this.mongoId = mongoId;
     this.roomId = roomId;
@@ -61,6 +67,9 @@ public class Booking {
     this.status = status;
     this.paymentMethod = paymentMethod;
     this.createdAt = createdAt;
+    this.cancellationReason = cancellationReason;
+    this.cancelledAt = cancelledAt;
+    this.refundAmount = refundAmount;
   }
 
   public long getId() {
@@ -123,6 +132,18 @@ public class Booking {
     return createdAt;
   }
 
+  public String getCancellationReason() {
+    return cancellationReason;
+  }
+
+  public long getCancelledAt() {
+    return cancelledAt;
+  }
+
+  public double getRefundAmount() {
+    return refundAmount;
+  }
+
   public Booking withId(long v) {
     return new Booking(
         v,
@@ -139,7 +160,10 @@ public class Booking {
         totalPrice,
         status,
         paymentMethod,
-        createdAt);
+        createdAt,
+        cancellationReason,
+        cancelledAt,
+        refundAmount);
   }
 
   public Booking withStatus(String s, @Nullable String p) {
@@ -158,6 +182,31 @@ public class Booking {
         totalPrice,
         s,
         p,
-        createdAt);
+        createdAt,
+        cancellationReason,
+        cancelledAt,
+        refundAmount);
+  }
+
+  public Booking cancelled(String reason, double refund, long time) {
+    return new Booking(
+        id,
+        mongoId,
+        roomId,
+        mongoRoomId,
+        slotId,
+        mongoSlotId,
+        userId,
+        mongoUserId,
+        checkInDate,
+        checkOutDate,
+        guestCount,
+        totalPrice,
+        "cancelled",
+        paymentMethod,
+        createdAt,
+        reason,
+        time,
+        refund);
   }
 }

@@ -3,7 +3,8 @@ package com.example.homestay;
 import android.app.Application;
 import com.example.homestay.data.database.HomestayDatabase;
 import com.example.homestay.data.repository.*;
-import java.util.concurrent.Executors;
+import com.example.homestay.utils.AppExecutors;
+import com.example.homestay.utils.SystemNotificationHelper;
 
 public class HomestayApplication extends Application {
   private HomestayDatabase database;
@@ -27,7 +28,8 @@ public class HomestayApplication extends Application {
               d.userDao(),
               d.favoriteDao(),
               d.notificationDao(),
-              d.reviewDao());
+              d.reviewDao(),
+              d.roomImageDao());
     }
     return repository;
   }
@@ -48,7 +50,8 @@ public class HomestayApplication extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
-    Executors.newSingleThreadExecutor()
+    SystemNotificationHelper.createChannel(this);
+    AppExecutors.io()
         .execute(
             () -> {
               if (!getSharedPreferences("DemoData", MODE_PRIVATE)

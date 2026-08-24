@@ -6,6 +6,7 @@ import android.widget.*;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.homestay.R;
 import com.example.homestay.data.model.*;
+import com.example.homestay.utils.DisplayFormatter;
 import com.google.android.material.button.MaterialButton;
 import java.text.*;
 import java.util.*;
@@ -82,15 +83,13 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
       itemView.setOnClickListener(v -> details.onBooking(b));
       badge.setText(statusLabel(b.getStatus()));
       badge.setBackgroundTintList(ColorStateList.valueOf(statusColor(b.getStatus())));
-      String d =
-          new SimpleDateFormat("yyMMdd", Locale.getDefault()).format(new Date(b.getCreatedAt()));
-      id.setText("#RG" + d + pad(b.getId()));
+      id.setText(DisplayFormatter.bookingCode(b.getId(), b.getCreatedAt()));
       room.setText(b.getRoom() == null ? "N/A" : b.getRoom().getName());
       user.setText(
           "Khách hàng: " + (b.getUser() == null ? "Chưa xác định" : b.getUser().getFullName()));
       dates.setText(date(b.getCheckInDate()) + " – " + date(b.getCheckOutDate()));
       guests.setText(b.getGuestCount() + " khách");
-      price.setText(money(b.getTotalPrice()));
+      price.setText(DisplayFormatter.vnd(b.getTotalPrice()));
       String method =
           "pay_on_site".equals(b.getPaymentMethod())
               ? "Thanh toán khi nhận phòng"
@@ -100,7 +99,11 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
           (b.getUser() == null ? "Chưa có email" : b.getUser().getEmail())
               + " • "
               + (b.getUser() == null ? "Chưa có số điện thoại" : b.getUser().getPhone()));
-      long nights = Math.max(1, (b.getCheckOutDate() - b.getCheckInDate()) / 86400000L);
+      long nights =
+          Math.max(
+              1,
+              com.example.homestay.domain.BookingCalculator.nights(
+                  b.getCheckInDate(), b.getCheckOutDate()));
       String created =
           new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("vi", "VN"))
               .format(new Date(b.getCreatedAt()));
@@ -115,17 +118,8 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
     }
   }
 
-  private static String pad(String s) {
-    while (s.length() < 3) s = "0" + s;
-    return s;
-  }
-
   private static String date(long t) {
-    return new SimpleDateFormat("dd/MM/yyyy", new Locale("vi", "VN")).format(new Date(t));
-  }
-
-  private static String money(double v) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(v) + " đ";
+    return new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("vi", "VN")).format(new Date(t));
   }
 
   private static String statusLabel(String s) {

@@ -5,6 +5,7 @@ import android.widget.*;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.homestay.R;
 import com.example.homestay.data.model.AdminUserData;
+import com.example.homestay.utils.AdminAuth;
 import java.text.*;
 import java.util.*;
 
@@ -14,12 +15,11 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.Hold
   }
 
   private final List<AdminUserData> items;
-  private final Listener delete, unlock, details, edit;
+  private final Listener delete, details, edit;
 
-  public AdminUserAdapter(List<AdminUserData> i, Listener d, Listener u, Listener x, Listener e) {
+  public AdminUserAdapter(List<AdminUserData> i, Listener d, Listener x, Listener e) {
     items = i;
     delete = d;
-    unlock = u;
     details = x;
     edit = e;
   }
@@ -56,29 +56,30 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.Hold
   }
 
   public class Holder extends RecyclerView.ViewHolder {
-    final TextView avatar, name, email, phone, metrics, created, lock;
-    final ImageButton unlockButton, editButton, deleteButton;
+    final TextView name, email, phone, metrics, created, lock;
+    final ImageView avatar;
+    final ImageButton editButton, deleteButton;
 
     Holder(View v) {
       super(v);
-      avatar = v.findViewById(R.id.tv_avatar);
+      avatar = v.findViewById(R.id.iv_avatar);
       name = v.findViewById(R.id.tv_user_name);
       email = v.findViewById(R.id.tv_user_email);
       phone = v.findViewById(R.id.tv_user_phone);
       metrics = v.findViewById(R.id.tv_user_metrics);
       created = v.findViewById(R.id.tv_user_created);
       lock = v.findViewById(R.id.tv_lock_status);
-      unlockButton = v.findViewById(R.id.btn_unlock);
       editButton = v.findViewById(R.id.btn_edit);
       deleteButton = v.findViewById(R.id.btn_delete);
     }
 
     void bind(AdminUserData u) {
       itemView.setOnClickListener(v -> details.onUser(u));
-      avatar.setText(
-          u.getFullName().isEmpty()
-              ? "U"
-              : u.getFullName().substring(0, 1).toUpperCase(Locale.ROOT));
+      boolean adminAccount = AdminAuth.EMAIL.equalsIgnoreCase(u.getEmail());
+      avatar.setImageResource(
+          adminAccount ? R.drawable.ic_admin_headset : R.drawable.ic_user_avatar_default);
+      int avatarPadding = adminAccount ? 9 : 0;
+      avatar.setPadding(avatarPadding, avatarPadding, avatarPadding, avatarPadding);
       name.setText(u.getFullName());
       email.setText(u.getEmail());
       phone.setText(u.getPhone());
@@ -112,17 +113,15 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.Hold
           lock.setTextColor(0xffff5722);
         }
         lock.setVisibility(View.VISIBLE);
-        unlockButton.setVisibility(View.VISIBLE);
       } else if (failed != null && failed > 0) {
         lock.setText(failed + " lần đăng nhập sai");
         lock.setTextColor(0xffff9800);
         lock.setVisibility(View.VISIBLE);
-        unlockButton.setVisibility(View.VISIBLE);
       } else {
         lock.setVisibility(View.GONE);
-        unlockButton.setVisibility(View.GONE);
       }
-      unlockButton.setOnClickListener(v -> unlock.onUser(u));
+      editButton.setVisibility(adminAccount ? View.GONE : View.VISIBLE);
+      deleteButton.setVisibility(adminAccount ? View.GONE : View.VISIBLE);
       editButton.setOnClickListener(v -> edit.onUser(u));
       deleteButton.setOnClickListener(v -> delete.onUser(u));
     }

@@ -38,9 +38,6 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.Holder> {
 
     void bind(ReviewDisplayItem item) {
       Review r = item.getReview();
-      String name = item.getReviewerName().trim();
-      String initial = name.isEmpty() ? "R" : name.substring(0, 1).toUpperCase();
-      ((TextView) itemView.findViewById(R.id.tv_reviewer_avatar)).setText(initial);
       ((TextView) itemView.findViewById(R.id.tv_reviewer_name)).setText(item.getReviewerName());
       ((TextView) itemView.findViewById(R.id.tv_review_stars))
           .setText(repeat("★", r.getRating()) + repeat("☆", 5 - r.getRating()));

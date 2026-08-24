@@ -103,6 +103,15 @@ public final class RateLimiter {
         .apply();
   }
 
+  public static void lock(Context context, String id) {
+    long lockedUntil = System.currentTimeMillis() + LOCK_SECONDS * 1000;
+    prefs(context)
+        .edit()
+        .putInt(FAILED + id, MAX_ATTEMPTS)
+        .putLong(LOCKED + id, lockedUntil)
+        .apply();
+  }
+
   private static SharedPreferences prefs(Context context) {
     return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
   }
