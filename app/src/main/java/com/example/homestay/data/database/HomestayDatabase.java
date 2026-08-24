@@ -20,7 +20,7 @@ import com.example.homestay.data.entity.*;
       Review.class,
       RoomImage.class
     },
-    version = 16,
+    version = 18,
     exportSchema = false)
 public abstract class HomestayDatabase extends RoomDatabase {
   public abstract RoomDao roomDao();
@@ -57,9 +57,9 @@ public abstract class HomestayDatabase extends RoomDatabase {
                       MIGRATION_12_13,
                       MIGRATION_13_14,
                       MIGRATION_14_15,
-                      MIGRATION_15_16)
-                  // Removed after Java repositories are moved to the shared IO executor.
-                  .fallbackToDestructiveMigration()
+                      MIGRATION_15_16,
+                      MIGRATION_16_17,
+                      MIGRATION_17_18)
                   .build();
       }
     return INSTANCE;
@@ -158,6 +158,28 @@ public abstract class HomestayDatabase extends RoomDatabase {
           // Các phiên bản cũ lưu ngày ở 00:00; chuyển sang 14:00 nhận và 12:00 trả phòng.
           db.execSQL("UPDATE bookings SET checkInDate = checkInDate + 50400000");
           db.execSQL("UPDATE bookings SET checkOutDate = checkOutDate + 43200000");
+        }
+      };
+  static final Migration MIGRATION_16_17 =
+      new Migration(16, 17) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+          db.execSQL("ALTER TABLE users ADD COLUMN locked INTEGER NOT NULL DEFAULT 0");
+        }
+      };
+  static final Migration MIGRATION_17_18 =
+      new Migration(17, 18) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+          db.execSQL("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'CUSTOMER'");
+          db.execSQL("UPDATE users SET role='ADMIN' WHERE LOWER(email)='admin@gmail.com'");
+          db.execSQL("ALTER TABLE bookings ADD COLUMN paymentStatus TEXT NOT NULL DEFAULT 'UNPAID'");
+          db.execSQL("ALTER TABLE bookings ADD COLUMN expiresAt INTEGER NOT NULL DEFAULT 0");
+          db.execSQL(
+              "UPDATE bookings SET expiresAt=createdAt+7200000 WHERE status='pending'");
+          db.execSQL("UPDATE bookings SET paymentStatus='PAID' WHERE status='completed'");
+          db.execSQL(
+              "UPDATE bookings SET paymentStatus='REFUND_PENDING' WHERE status='cancelled' AND refundAmount>0");
         }
       };
 }

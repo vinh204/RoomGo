@@ -52,12 +52,14 @@ public final class RoomSearchEngine {
     return checkIn >= 0 && checkOut > checkIn;
   }
 
-  private static int occupiedSlots(
+  public static int occupiedSlots(
       long roomId, List<Booking> bookings, long checkIn, long checkOut) {
     int occupied = 0;
     for (Booking booking : bookings) {
       if (booking.getRoomId() == roomId
-          && ("pending".equals(booking.getStatus()) || "confirmed".equals(booking.getStatus()))
+          && ("pending".equals(booking.getStatus())
+              || "confirmed".equals(booking.getStatus())
+              || "checked_in".equals(booking.getStatus()))
           && booking.getCheckInDate() < checkOut
           && booking.getCheckOutDate() > checkIn) {
         occupied++;

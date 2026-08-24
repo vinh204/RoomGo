@@ -43,6 +43,19 @@ public class RoomSearchEngineTest {
   }
 
   @Test
+  public void checkedInBookingOccupiesRoom() {
+    Booking booking = booking(1, 100, 200, "checked_in");
+    assertEquals(1, RoomSearchEngine.occupiedSlots(1, Collections.singletonList(booking), 150, 160));
+  }
+
+  @Test
+  public void cancelledAndCompletedBookingsReleaseRoom() {
+    List<Booking> bookings =
+        Arrays.asList(booking(1, 100, 200, "cancelled"), booking(1, 100, 200, "completed"));
+    assertEquals(0, RoomSearchEngine.occupiedSlots(1, bookings, 150, 160));
+  }
+
+  @Test
   public void sortsByLowestPrice() {
     List<Room> result =
         RoomSearchEngine.filter(

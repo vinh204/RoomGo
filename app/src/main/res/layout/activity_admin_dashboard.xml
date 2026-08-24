@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/home_background"
-    android:forceDarkAllowed="false"
     android:orientation="vertical">
 
     <LinearLayout
@@ -13,12 +12,24 @@
         android:background="@color/home_primary"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="22dp"
-        android:paddingEnd="30dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <ImageView
+            android:id="@+id/btn_admin_account"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_admin_avatar"
+            android:clickable="true"
+            android:contentDescription="@string/admin_account"
+            android:focusable="true"
+            android:padding="7dp"
+            android:src="@drawable/ic_admin_headset" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="@string/admin_dashboard_title"
             android:textColor="@android:color/white"
@@ -30,8 +41,6 @@
             layout="@layout/action_notification_badge"
             android:layout_width="48dp"
             android:layout_height="match_parent" />
-
-        <ImageView android:id="@+id/btn_admin_account" android:layout_width="44dp" android:layout_height="44dp" android:layout_marginStart="4dp" android:background="@drawable/bg_admin_avatar" android:clickable="true" android:contentDescription="@string/admin_account" android:focusable="true" android:padding="7dp" android:src="@drawable/ic_admin_headset" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -82,8 +91,23 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView android:id="@+id/card_period_summary" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="12dp" android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground" app:cardBackgroundColor="#F7F9FC" app:cardCornerRadius="14dp" app:cardElevation="0dp" app:strokeColor="@color/home_divider" app:strokeWidth="1dp">
-                <TextView android:id="@+id/tv_period_summary" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="0 đang lưu trú  ·  0 hoàn thành  ·  0 đã hủy" android:textColor="@color/home_text" android:textSize="13sp" android:textStyle="bold" />
+            <com.google.android.material.card.MaterialCardView android:id="@+id/card_period_summary" android:layout_width="match_parent" android:layout_height="76dp" android:layout_marginTop="12dp" android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground" app:cardBackgroundColor="@color/home_surface" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/home_divider" app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="horizontal" android:paddingHorizontal="12dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                        <TextView android:id="@+id/tv_stat_staying" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/home_primary" android:textSize="19sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Đang lưu trú" android:textColor="@color/home_subtitle" android:textSize="12sp" />
+                    </LinearLayout>
+                    <View android:layout_width="1dp" android:layout_height="34dp" android:background="@color/home_divider" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                        <TextView android:id="@+id/tv_stat_completed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#167A50" android:textSize="19sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Hoàn thành" android:textColor="@color/home_subtitle" android:textSize="12sp" />
+                    </LinearLayout>
+                    <View android:layout_width="1dp" android:layout_height="34dp" android:background="@color/home_divider" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                        <TextView android:id="@+id/tv_stat_cancelled" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#D14343" android:textSize="19sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Đã hủy" android:textColor="@color/home_subtitle" android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@string/admin_recent_bookings" android:textColor="@color/home_title" android:textSize="19sp" android:textStyle="bold" />

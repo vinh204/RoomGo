@@ -27,6 +27,18 @@ public interface RoomDao {
   @Query("UPDATE rooms SET isFeatured=0")
   void clearFeaturedRooms();
 
+  @Transaction
+  default long insertExclusiveFeatured(Room room) {
+    if (room.isFeatured()) clearFeaturedRooms();
+    return insertRoom(room);
+  }
+
+  @Transaction
+  default void updateExclusiveFeatured(Room room) {
+    if (room.isFeatured()) clearFeaturedRooms();
+    updateRoom(room);
+  }
+
   @Delete
   void deleteRoom(Room r);
 

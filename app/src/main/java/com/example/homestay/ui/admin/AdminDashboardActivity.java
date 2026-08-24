@@ -75,26 +75,26 @@ public class AdminDashboardActivity extends AppCompatActivity {
       if ("pending".equals(b.getStatus())) pending++;
       boolean inPeriod = b.getCreatedAt() >= periodStart && b.getCreatedAt() <= now;
       if (inPeriod
-          && ("confirmed".equals(b.getStatus()) || "completed".equals(b.getStatus())))
+          && ("confirmed".equals(b.getStatus())
+              || "checked_in".equals(b.getStatus())
+              || "completed".equals(b.getStatus())))
         expected += b.getTotalPrice();
-      if (inPeriod && "completed".equals(b.getStatus())) actual += b.getTotalPrice();
+      if (inPeriod && "PAID".equals(b.getPaymentStatus())) actual += b.getTotalPrice();
       if (inPeriod && "completed".equals(b.getStatus())) completed++;
       if (inPeriod && "cancelled".equals(b.getStatus())) cancelled++;
-      if ("confirmed".equals(b.getStatus())
-          && b.getCheckInDate() <= now
-          && b.getCheckOutDate() >= now) staying++;
+      if ("checked_in".equals(b.getStatus())) staying++;
       if (b.getCreatedAt() >= previousStart
           && b.getCreatedAt() < periodStart
-          && "completed".equals(b.getStatus())) previousActual += b.getTotalPrice();
+          && "PAID".equals(b.getPaymentStatus())) previousActual += b.getTotalPrice();
     }
     text(R.id.tv_stat_rooms, active + "\nPhòng đang mở");
     text(R.id.tv_stat_users, users.size() + "\nNgười dùng");
     text(R.id.tv_stat_pending, pending + "\nChờ duyệt");
     text(R.id.tv_stat_revenue, DisplayFormatter.vnd(expected));
     text(R.id.tv_stat_revenue_actual, DisplayFormatter.vnd(actual));
-    text(
-        R.id.tv_period_summary,
-        staying + " đang lưu trú  ·  " + completed + " hoàn thành  ·  " + cancelled + " đã hủy");
+    text(R.id.tv_stat_staying, String.valueOf(staying));
+    text(R.id.tv_stat_completed, String.valueOf(completed));
+    text(R.id.tv_stat_cancelled, String.valueOf(cancelled));
     int change =
         previousActual == 0
             ? (actual > 0 ? 100 : 0)
@@ -166,7 +166,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
     findViewById(R.id.btn_admin_account)
         .setOnClickListener(
             anchor -> {
-              PopupMenu menu = new PopupMenu(this, anchor, Gravity.END);
+              // The avatar sits on the left side of the header. Aligning the popup to END
+              // makes a wide menu get pushed against the screen edge, so keep its start
+              // aligned with the avatar instead.
+              PopupMenu menu = new PopupMenu(this, anchor, Gravity.START);
               menu.getMenu()
                   .add("Đổi mật khẩu")
                   .setOnMenuItemClickListener(
@@ -182,6 +185,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         return true;
                       });
               menu.getMenu()
+                  .add("Khôi phục dữ liệu demo")
+                  .setOnMenuItemClickListener(
+                      x -> {
+                        confirmResetDemoData();
+                        return true;
+                      });
+              menu.getMenu()
                   .add("Đăng xuất")
                   .setOnMenuItemClickListener(
                       x -> {
@@ -190,6 +200,33 @@ public class AdminDashboardActivity extends AppCompatActivity {
                       });
               menu.show();
             });
+  }
+
+  private void confirmResetDemoData() {
+    new MaterialAlertDialogBuilder(this)
+        .setTitle("Khôi phục dữ liệu demo?")
+        .setMessage(
+            "Toàn bộ phòng, booking, tài khoản khách, đánh giá và thông báo hiện tại sẽ bị xóa. "
+                + "Tài khoản admin được đưa về mật khẩu mặc định Admin@123.")
+        .setNegativeButton("Hủy", null)
+        .setPositiveButton(
+            "Khôi phục",
+            (dialog, which) ->
+                AppExecutors.io()
+                    .execute(
+                        () -> {
+                          ((HomestayApplication) getApplication()).resetDemoData();
+                          runOnUiThread(
+                              () -> {
+                                Toast.makeText(
+                                        this,
+                                        "Đã khôi phục dữ liệu demo. Vui lòng đăng nhập lại.",
+                                        Toast.LENGTH_LONG)
+                                    .show();
+                                logout();
+                              });
+                        }))
+        .show();
   }
 
   private void updateNotificationBadge(List<AppNotification> notifications) {
@@ -311,37 +348,45 @@ public class AdminDashboardActivity extends AppCompatActivity {
   }
 
   private void ensureAdminCustomerSession() {
+    ensureAdminCustomerSession(null);
+  }
+
+  private void ensureAdminCustomerSession(Runnable onReady) {
     AppExecutors.io()
         .execute(
             () -> {
               SessionManager session = new SessionManager(this);
-              if (session.isLoggedIn()) return;
-              User user = repository.getUserByEmail(AdminAuth.EMAIL);
-              if (user == null) {
-                long id =
-                    repository.insertUser(
-                        new User(
-                            0,
-                            AdminAuth.EMAIL,
-                            "admin-local",
-                            "AdminLocalSession@1",
-                            "Administrator",
-                            System.currentTimeMillis()));
-                user = repository.getUserById(id);
+              if (!session.isLoggedIn()) {
+                User user = repository.getUserByEmail(AdminAuth.EMAIL);
+                if (user == null) {
+                  long id =
+                      repository.insertUser(
+                          new User(
+                              0,
+                              AdminAuth.EMAIL,
+                              "admin-local",
+                              "AdminLocalSession@1",
+                              "Administrator",
+                              System.currentTimeMillis()));
+                  user = repository.getUserById(id);
+                }
+                if (user != null)
+                  session.saveSession(
+                      user.getId(), "local-admin", user.getEmail(), user.getFullName());
               }
-              if (user != null)
-                session.saveSession(
-                    user.getId(), "local-admin", user.getEmail(), user.getFullName());
+              if (onReady != null) runOnUiThread(onReady);
             });
   }
 
   private void switchToGuest() {
-    ensureAdminCustomerSession();
-    Intent i = new Intent(this, MainActivity.class);
-    i.putExtra("admin_guest_preview", true);
-    i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-    startActivity(i);
-    finish();
+    ensureAdminCustomerSession(
+        () -> {
+          Intent intent = new Intent(this, MainActivity.class);
+          intent.putExtra("admin_guest_preview", true);
+          intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+          startActivity(intent);
+          overridePendingTransition(0, 0);
+        });
   }
 
   private void logout() {
@@ -368,10 +413,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
         return "Chờ duyệt";
       case "confirmed":
         return "Đã xác nhận";
+      case "checked_in":
+        return "Đang lưu trú";
       case "completed":
         return "Hoàn thành";
       case "cancelled":
         return "Đã hủy";
+      case "expired":
+        return "Hết hạn";
       default:
         return s;
     }
@@ -383,10 +432,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
         return 0xFFA55A00;
       case "confirmed":
         return 0xFF167A50;
+      case "checked_in":
+        return 0xFF0B4AA2;
       case "completed":
         return 0xFF0B4AA2;
       case "cancelled":
         return 0xFFD14343;
+      case "expired":
+        return 0xFF64748B;
       default:
         return 0xFF737B8C;
     }

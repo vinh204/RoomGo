@@ -32,7 +32,10 @@ public class Booking {
   final String cancellationReason;
   final long cancelledAt;
   final double refundAmount;
+  @NonNull final String paymentStatus;
+  final long expiresAt;
 
+  @Ignore
   public Booking(
       long id,
       @Nullable String mongoId,
@@ -52,6 +55,50 @@ public class Booking {
       @Nullable String cancellationReason,
       long cancelledAt,
       double refundAmount) {
+    this(
+        id,
+        mongoId,
+        roomId,
+        mongoRoomId,
+        slotId,
+        mongoSlotId,
+        userId,
+        mongoUserId,
+        checkInDate,
+        checkOutDate,
+        guestCount,
+        totalPrice,
+        status,
+        paymentMethod,
+        createdAt,
+        cancellationReason,
+        cancelledAt,
+        refundAmount,
+        "UNPAID",
+        0);
+  }
+
+  public Booking(
+      long id,
+      @Nullable String mongoId,
+      long roomId,
+      @Nullable String mongoRoomId,
+      @Nullable Long slotId,
+      @Nullable String mongoSlotId,
+      long userId,
+      @Nullable String mongoUserId,
+      long checkInDate,
+      long checkOutDate,
+      int guestCount,
+      double totalPrice,
+      String status,
+      @Nullable String paymentMethod,
+      long createdAt,
+      @Nullable String cancellationReason,
+      long cancelledAt,
+      double refundAmount,
+      @NonNull String paymentStatus,
+      long expiresAt) {
     this.id = id;
     this.mongoId = mongoId;
     this.roomId = roomId;
@@ -70,6 +117,8 @@ public class Booking {
     this.cancellationReason = cancellationReason;
     this.cancelledAt = cancelledAt;
     this.refundAmount = refundAmount;
+    this.paymentStatus = paymentStatus;
+    this.expiresAt = expiresAt;
   }
 
   public long getId() {
@@ -144,6 +193,14 @@ public class Booking {
     return refundAmount;
   }
 
+  public String getPaymentStatus() {
+    return paymentStatus;
+  }
+
+  public long getExpiresAt() {
+    return expiresAt;
+  }
+
   public Booking withId(long v) {
     return new Booking(
         v,
@@ -163,7 +220,9 @@ public class Booking {
         createdAt,
         cancellationReason,
         cancelledAt,
-        refundAmount);
+        refundAmount,
+        paymentStatus,
+        expiresAt);
   }
 
   public Booking withStatus(String s, @Nullable String p) {
@@ -185,7 +244,9 @@ public class Booking {
         createdAt,
         cancellationReason,
         cancelledAt,
-        refundAmount);
+        refundAmount,
+        paymentStatus,
+        expiresAt);
   }
 
   public Booking cancelled(String reason, double refund, long time) {
@@ -207,6 +268,15 @@ public class Booking {
         createdAt,
         reason,
         time,
-        refund);
+        refund,
+        refund > 0 ? "REFUND_PENDING" : paymentStatus,
+        expiresAt);
+  }
+
+  public Booking withPaymentStatus(String value) {
+    return new Booking(
+        id, mongoId, roomId, mongoRoomId, slotId, mongoSlotId, userId, mongoUserId,
+        checkInDate, checkOutDate, guestCount, totalPrice, status, paymentMethod, createdAt,
+        cancellationReason, cancelledAt, refundAmount, value, expiresAt);
   }
 }

@@ -122,12 +122,17 @@
             <TextView
                 android:id="@+id/tv_detail_nights"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="32dp"
                 android:layout_gravity="center_vertical"
-                android:background="#E8EEF8"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/bg_booking_nights_chip"
+                android:gravity="center"
+                android:minWidth="64dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
                 android:textColor="@color/home_primary"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <LinearLayout

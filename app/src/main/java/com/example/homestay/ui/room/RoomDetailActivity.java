@@ -116,6 +116,7 @@ public class RoomDetailActivity extends AppCompatActivity {
           List<RoomImage> roomImages = repository.getRoomImages(roomId);
           List<Slot> slots = repository.getSlotsByRoomIdNow(roomId);
           List<Review> values = repository.getReviewsByRoomNow(roomId);
+          List<Booking> bookings = repository.getAllBookingsNow();
           Map<Long, User> users = new HashMap<>();
           for (User u : repository.getAllUsersNow()) users.put(u.getId(), u);
           List<ReviewDisplayItem> display = new ArrayList<>();
@@ -130,7 +131,7 @@ public class RoomDetailActivity extends AppCompatActivity {
           }
           runOnUiThread(
               () -> {
-                if (room != null) displayRoom(room, roomImages);
+                if (room != null) displayRoom(room, roomImages, bookings);
                 slotAdapter.submitList(slots);
                 reviews = display;
                 renderReviews();
@@ -159,7 +160,7 @@ public class RoomDetailActivity extends AppCompatActivity {
     b.setText(showAllReviews ? "Thu gọn đánh giá" : "Xem tất cả " + reviews.size() + " đánh giá");
   }
 
-  private void displayRoom(Room r, List<RoomImage> storedImages) {
+  private void displayRoom(Room r, List<RoomImage> storedImages, List<Booking> bookings) {
     currentRoom = r;
     List<String> images = new ArrayList<>();
     for (RoomImage image : storedImages) images.add(image.getImageUri());
@@ -196,12 +197,28 @@ public class RoomDetailActivity extends AppCompatActivity {
     text(R.id.tv_price, price);
     text(R.id.tv_bottom_price, price);
     TextView status = findViewById(R.id.tv_availability_status);
-    status.setText(r.isAvailable() ? "Còn phòng" : "Đã kín");
+    long now = System.currentTimeMillis();
+    int available =
+        r.isAvailable()
+            ? Math.max(
+                0,
+                r.getMaxSlots()
+                    - com.example.homestay.domain.RoomSearchEngine.occupiedSlots(
+                        r.getId(), bookings, now, now + 1))
+            : 0;
+    status.setText(
+        r.isAvailable()
+            ? "Còn " + available + "/" + r.getMaxSlots() + " phòng"
+            : "Tạm ngừng nhận khách");
     status.setTextColor(
         getColor(
-            r.isAvailable() ? android.R.color.holo_green_dark : android.R.color.holo_red_dark));
+            r.isAvailable() && available > 0
+                ? android.R.color.holo_green_dark
+                : android.R.color.holo_red_dark));
     status.setBackgroundResource(
-        r.isAvailable() ? R.drawable.bg_available_chip : R.drawable.bg_unavailable_chip);
+        r.isAvailable() && available > 0
+            ? R.drawable.bg_available_chip
+            : R.drawable.bg_unavailable_chip);
     MaterialButton book = findViewById(R.id.btn_book);
     book.setEnabled(r.isAvailable());
     book.setText(r.isAvailable() ? "Đặt ngay" : "Không còn phòng");
@@ -370,7 +387,13 @@ public class RoomDetailActivity extends AppCompatActivity {
     }
     String validation =
         BookingRules.validate(
-            dates[0], dates[1], count, room.getMaxGuests(), 0, room.getMaxSlots(), startOfToday());
+            dates[0],
+            dates[1],
+            count,
+            room.getMaxGuests(),
+            0,
+            room.getMaxSlots(),
+            System.currentTimeMillis());
     if (validation != null) {
       toast(validation);
       return;
@@ -388,7 +411,7 @@ public class RoomDetailActivity extends AppCompatActivity {
                   room.getMaxGuests(),
                   occupied,
                   room.getMaxSlots(),
-                  startOfToday());
+                  System.currentTimeMillis());
           if (availabilityValidation != null) {
             runOnUiThread(
                 () -> {
@@ -418,75 +441,73 @@ public class RoomDetailActivity extends AppCompatActivity {
                   "pending",
                   null,
                   selected[0] == null ? null : String.valueOf(selected[0].getId()));
-          OperationResult<BookingRepository.BookingData> result =
-              bookingRepository.createBooking(
-                  mongo, userId, room.getId(), String.valueOf(room.getId()), request);
           runOnUiThread(
               () -> {
-                if (result.isSuccess()) {
-                  dialog.dismiss();
-                  showPaymentDialog(result.getValue().getBooking());
-                } else {
-                  button.setEnabled(true);
-                  button.setText("Xác nhận đặt phòng");
-                  toast(
-                      "Không thể đặt phòng: "
-                          + (result.getError() == null
-                              ? "Lỗi không xác định"
-                              : result.getError().getMessage()));
-                }
+                dialog.dismiss();
+                showPaymentDialog(room, userId, mongo, request);
               });
         });
   }
 
-  private void showPaymentDialog(Booking booking) {
+  private void showPaymentDialog(
+      Room room, long userId, String mongoUserId, CreateBookingRequest draft) {
     BottomSheetDialog dialog = new BottomSheetDialog(this);
     View v = getLayoutInflater().inflate(R.layout.dialog_payment, null);
     v.setBackgroundColor(Color.WHITE);
     dialog.setContentView(v);
-    boolean[] confirmed = {false};
-    dialog.setOnDismissListener(
-        x -> {
-          if (!confirmed[0]) executor.execute(() -> repository.deleteBooking(booking));
-        });
     TextView info = v.findViewById(R.id.tv_booking_info),
-        qr = v.findViewById(R.id.tv_qr_maintenance),
         total = v.findViewById(R.id.tv_total_payment);
     MaterialButton button = v.findViewById(R.id.btn_confirm_payment);
     SimpleDateFormat f = new SimpleDateFormat("dd/MM/yyyy · HH:mm", new Locale("vi", "VN"));
-    if (currentRoom != null)
-      info.setText(
-          currentRoom.getName()
-              + "\n"
-              + f.format(new Date(booking.getCheckInDate()))
-              + " - "
-              + f.format(new Date(booking.getCheckOutDate()))
-              + "\n"
-              + booking.getGuestCount()
-              + " người");
-    total.setText(DisplayFormatter.vnd(booking.getTotalPrice()));
-    RadioGroup methods = v.findViewById(R.id.rg_payment_method);
-    methods.setOnCheckedChangeListener(
-        (g, id) -> {
-          boolean maintenance = id == R.id.rb_qr_code;
-          qr.setVisibility(maintenance ? View.VISIBLE : View.GONE);
-          button.setEnabled(!maintenance);
-          button.setText(maintenance ? "QR đang bảo trì" : "Xác nhận thanh toán");
-        });
+    info.setText(
+        room.getName()
+            + "\n"
+            + f.format(new Date(draft.getCheckInDate()))
+            + " - "
+            + f.format(new Date(draft.getCheckOutDate()))
+            + "\n"
+            + draft.getGuestCount()
+            + " người");
+    total.setText(DisplayFormatter.vnd(draft.getTotalPrice()));
     button.setOnClickListener(
         x -> {
           button.setEnabled(false);
           button.setText("Đang xử lý...");
           executor.execute(
               () -> {
-                Booking updated = booking.withStatus("pending", "pay_on_site");
-                repository.updateBooking(updated);
+                CreateBookingRequest request =
+                    new CreateBookingRequest(
+                        draft.getRoomId(),
+                        draft.getCheckInDate(),
+                        draft.getCheckOutDate(),
+                        draft.getGuestCount(),
+                        draft.getTotalPrice(),
+                        "pending",
+                        "pay_on_site",
+                        draft.getSlotId());
+                OperationResult<BookingRepository.BookingData> result =
+                    bookingRepository.createBooking(
+                        mongoUserId,
+                        userId,
+                        room.getId(),
+                        String.valueOf(room.getId()),
+                        request);
                 runOnUiThread(
                     () -> {
-                      confirmed[0] = true;
-                      toast("Đặt phòng thành công! Vui lòng thanh toán khi đến nơi.");
-                      dialog.dismiss();
-                      showSuccess(updated);
+                      if (result.isSuccess()) {
+                        Booking booking = result.getValue().getBooking();
+                        toast("Đặt phòng thành công! Vui lòng thanh toán khi đến nơi.");
+                        dialog.dismiss();
+                        showSuccess(booking);
+                      } else {
+                        button.setEnabled(true);
+                        button.setText("Xác nhận đặt phòng");
+                        toast(
+                            "Không thể đặt phòng: "
+                                + (result.getError() == null
+                                    ? "Lỗi không xác định"
+                                    : result.getError().getMessage()));
+                      }
                     });
               });
         });

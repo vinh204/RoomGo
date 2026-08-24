@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.annotation.Nullable;
 import java.util.concurrent.TimeUnit;
+import java.util.Locale;
 
 public final class RateLimiter {
   private static final String PREFS = "RateLimiterPrefs",
@@ -12,11 +13,13 @@ public final class RateLimiter {
       LAST = "last_attempt_",
       COUNT = "lock_count_";
   private static final int MAX_ATTEMPTS = 5;
-  private static final long LOCK_SECONDS = 100L * 365 * 24 * 60 * 60;
+  private static final long TEMP_LOCK_SECONDS = 15L * 60;
+  private static final long ADMIN_LOCK_SECONDS = 100L * 365 * 24 * 60 * 60;
 
   private RateLimiter() {}
 
   public static AttemptStatus canAttemptLogin(Context context, String id) {
+    id = normalize(id);
     SharedPreferences prefs = prefs(context);
     long until = prefs.getLong(LOCKED + id, 0);
     if (until > 0 && System.currentTimeMillis() >= until) {
@@ -33,6 +36,7 @@ public final class RateLimiter {
   }
 
   public static FailureStatus recordFailure(Context context, String id) {
+    id = normalize(id);
     SharedPreferences p = prefs(context);
     long now = System.currentTimeMillis();
     long until = p.getLong(LOCKED + id, 0);
@@ -42,7 +46,7 @@ public final class RateLimiter {
     SharedPreferences.Editor editor =
         p.edit().putInt(FAILED + id, attempts).putLong(LAST + id, now);
     if (attempts >= MAX_ATTEMPTS) {
-      long newUntil = now + LOCK_SECONDS * 1000;
+      long newUntil = now + TEMP_LOCK_SECONDS * 1000;
       editor.putLong(LOCKED + id, newUntil).apply();
       return new FailureStatus(0, newUntil);
     }
@@ -55,6 +59,7 @@ public final class RateLimiter {
   }
 
   public static long getLockedSecondsRemaining(Context context, String id) {
+    id = normalize(id);
     long remaining = prefs(context).getLong(LOCKED + id, 0) - System.currentTimeMillis();
     return remaining > 0 ? TimeUnit.MILLISECONDS.toSeconds(remaining) + 1 : 0;
   }
@@ -70,6 +75,7 @@ public final class RateLimiter {
       @Nullable Integer attempts,
       @Nullable Object lockedUntil,
       @Nullable Integer remaining) {
+    id = normalize(id);
     SharedPreferences.Editor editor = prefs(context).edit();
     if (attempts != null) editor.putInt(FAILED + id, attempts);
     if (lockedUntil != null) {
@@ -90,10 +96,12 @@ public final class RateLimiter {
   }
 
   public static int getFailedAttempts(Context context, String id) {
+    id = normalize(id);
     return prefs(context).getInt(FAILED + id, 0);
   }
 
   public static void reset(Context context, String id) {
+    id = normalize(id);
     prefs(context)
         .edit()
         .remove(FAILED + id)
@@ -104,7 +112,8 @@ public final class RateLimiter {
   }
 
   public static void lock(Context context, String id) {
-    long lockedUntil = System.currentTimeMillis() + LOCK_SECONDS * 1000;
+    id = normalize(id);
+    long lockedUntil = System.currentTimeMillis() + ADMIN_LOCK_SECONDS * 1000;
     prefs(context)
         .edit()
         .putInt(FAILED + id, MAX_ATTEMPTS)
@@ -114,6 +123,10 @@ public final class RateLimiter {
 
   private static SharedPreferences prefs(Context context) {
     return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+  }
+
+  private static String normalize(String id) {
+    return id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
   }
 
   public static final class AttemptStatus {

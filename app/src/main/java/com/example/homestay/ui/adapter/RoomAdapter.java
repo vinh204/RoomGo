@@ -27,6 +27,7 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.Holder> {
   private final FavoriteClick favoriteClick;
   private final FavoriteStatus favoriteStatus;
   private List<Room> items = Collections.emptyList();
+  private Map<Long, Integer> availableRooms = Collections.emptyMap();
 
   public RoomAdapter(RoomClick c, FavoriteClick f, FavoriteStatus s) {
     roomClick = c;
@@ -37,6 +38,10 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.Holder> {
   public void submitList(List<Room> v) {
     items = v;
     notifyDataSetChanged();
+  }
+
+  public void submitAvailability(Map<Long, Integer> values) {
+    availableRooms = values == null ? Collections.emptyMap() : new HashMap<>(values);
   }
 
   @Override
@@ -88,7 +93,15 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.Holder> {
       price.setText(
           NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) r.getPrice())
               + " đ / đêm");
-      capacity.setText("Tối đa " + r.getMaxGuests() + " khách · Còn phòng");
+      int available = Math.max(0, availableRooms.getOrDefault(r.getId(), r.getMaxSlots()));
+      capacity.setText(
+          "Tối đa "
+              + r.getMaxGuests()
+              + " khách · Còn "
+              + available
+              + "/"
+              + r.getMaxSlots()
+              + " phòng");
       int fallback = R.drawable.room_dalat;
       String data = r.getImageUrl().trim().isEmpty() ? null : r.getImageUrl();
       ImageLoader.load(image, data, fallback);

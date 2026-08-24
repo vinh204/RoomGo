@@ -43,45 +43,24 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <RadioGroup
-            android:id="@+id/rg_payment_method"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:orientation="vertical">
-
-            <RadioButton
-                android:id="@+id/rb_qr_code"
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Thanh toán bằng QR"
-                android:textColor="@color/home_text"
-                android:textSize="15sp"
-                android:paddingVertical="8dp" />
-
-            <RadioButton
-                android:id="@+id/rb_pay_on_site"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="true"
+                android:background="#F1F6FD"
+                android:padding="14dp"
                 android:text="Thanh toán khi nhận phòng"
-                android:textColor="@color/home_text"
+                android:textColor="@color/home_primary"
                 android:textSize="15sp"
-                android:paddingVertical="8dp" />
-        </RadioGroup>
-
-        <TextView
-            android:id="@+id/tv_qr_maintenance"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="#FFF4E5"
-            android:gravity="center"
-            android:padding="16dp"
-            android:text="Thanh toán QR đang bảo trì. Vui lòng chọn phương thức thanh toán khác."
-            android:textColor="#9A5B00"
-            android:textSize="14sp"
-            android:visibility="gone" />
+                android:textStyle="bold" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" android:text="Bạn thanh toán trực tiếp sau khi nhận phòng."
+                android:textColor="@color/home_subtitle" android:textSize="13sp" />
+        </LinearLayout>
 
         <View
             android:layout_width="match_parent"
@@ -119,7 +98,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Xác nhận thanh toán"
+            android:text="Xác nhận đặt phòng"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="16sp"

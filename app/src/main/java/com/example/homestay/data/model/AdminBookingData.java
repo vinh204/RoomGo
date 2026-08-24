@@ -3,7 +3,7 @@ package com.example.homestay.data.model;
 import androidx.annotation.Nullable;
 
 public final class AdminBookingData {
-  private final String id, status, paymentMethod, slotId;
+  private final String id, status, paymentMethod, paymentStatus, slotId;
   private final AdminBookingUser user;
   private final AdminBookingRoom room;
   private final long checkInDate, checkOutDate, createdAt;
@@ -20,6 +20,7 @@ public final class AdminBookingData {
       double total,
       String status,
       @Nullable String payment,
+      String paymentStatus,
       long created,
       @Nullable String slot) {
     this.id = id;
@@ -31,6 +32,7 @@ public final class AdminBookingData {
     totalPrice = total;
     this.status = status;
     paymentMethod = payment;
+    this.paymentStatus = paymentStatus;
     createdAt = created;
     slotId = slot;
   }
@@ -69,6 +71,10 @@ public final class AdminBookingData {
 
   public String getPaymentMethod() {
     return paymentMethod;
+  }
+
+  public String getPaymentStatus() {
+    return paymentStatus;
   }
 
   public long getCreatedAt() {

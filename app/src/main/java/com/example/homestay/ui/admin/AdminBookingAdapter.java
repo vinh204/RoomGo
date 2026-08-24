@@ -94,7 +94,7 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
           "pay_on_site".equals(b.getPaymentMethod())
               ? "Thanh toán khi nhận phòng"
               : "qr_code".equals(b.getPaymentMethod()) ? "Thanh toán QR" : "Chưa thanh toán";
-      payment.setText(method);
+      payment.setText(method + " • " + DisplayFormatter.paymentStatus(b.getPaymentStatus()));
       contact.setText(
           (b.getUser() == null ? "Chưa có email" : b.getUser().getEmail())
               + " • "
@@ -114,7 +114,14 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
               + " • Tạo lúc "
               + created);
       statusButton.setOnClickListener(v -> change.onBooking(b));
+      boolean actionable =
+          "pending".equals(b.getStatus())
+              || "confirmed".equals(b.getStatus())
+              || ("cancelled".equals(b.getStatus())
+                  && "REFUND_PENDING".equals(b.getPaymentStatus()));
+      statusButton.setVisibility(actionable ? View.VISIBLE : View.GONE);
       deleteButton.setOnClickListener(v -> delete.onBooking(b));
+      deleteButton.setVisibility(View.GONE);
     }
   }
 
@@ -123,30 +130,38 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
   }
 
   private static String statusLabel(String s) {
-    switch (s.toLowerCase()) {
+    switch (s.toLowerCase(Locale.ROOT)) {
       case "pending":
         return "Chờ duyệt";
       case "confirmed":
         return "Đã xác nhận";
+      case "checked_in":
+        return "Đang lưu trú";
       case "completed":
         return "Hoàn thành";
       case "cancelled":
         return "Đã hủy";
+      case "expired":
+        return "Hết hạn";
       default:
         return s;
     }
   }
 
   private static int statusColor(String s) {
-    switch (s.toLowerCase()) {
+    switch (s.toLowerCase(Locale.ROOT)) {
       case "pending":
         return 0xffff9800;
       case "confirmed":
         return 0xff4caf50;
+      case "checked_in":
+        return 0xff0b4aa2;
       case "cancelled":
         return 0xfff44336;
       case "completed":
         return 0xff2196f3;
+      case "expired":
+        return 0xff64748b;
       default:
         return 0xff9e9e9e;
     }

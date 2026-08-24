@@ -83,8 +83,12 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.Holder> 
         return "Chờ xác nhận";
       case "confirmed":
         return "Đã xác nhận";
+      case "checked_in":
+        return "Đang lưu trú";
       case "cancelled":
         return "Đã hủy";
+      case "expired":
+        return "Hết hạn";
       case "completed":
         return "Hoàn thành";
       default:
@@ -98,8 +102,12 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.Holder> 
         return Color.parseColor("#FF9800");
       case "confirmed":
         return Color.parseColor("#4CAF50");
+      case "checked_in":
+        return Color.parseColor("#0B4AA2");
       case "cancelled":
         return Color.parseColor("#F44336");
+      case "expired":
+        return Color.parseColor("#64748B");
       case "completed":
         return Color.parseColor("#2196F3");
       default:

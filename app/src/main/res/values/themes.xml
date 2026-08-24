@@ -13,7 +13,10 @@
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
 
-    <style name="Theme.Homestay" parent="Base.Theme.Homestay" />
+    <style name="Theme.Homestay" parent="Base.Theme.Homestay">
+        <item name="android:windowBackground">@color/home_background</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 
     <style name="Theme.RoomGo.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/home_primary</item>
@@ -23,6 +26,8 @@
     
     <!-- Admin theme - Force light mode only -->
     <style name="Theme.Homestay.Admin" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowBackground">@color/home_background</item>
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
     <style name="AdminNavItem">
         <item name="android:layout_width">0dp</item><item name="android:layout_height">match_parent</item>

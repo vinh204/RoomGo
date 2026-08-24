@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="24dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:layout_width="64dp" android:layout_height="64dp"
+                android:contentDescription="Ảnh đại diện" android:src="@drawable/ic_user_avatar_default" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_marginStart="16dp" android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/tv_detail_name" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:textColor="@color/home_title"
+                    android:textSize="21sp" android:textStyle="bold" />
+                <TextView android:id="@+id/tv_detail_status" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_available_chip" android:paddingHorizontal="12dp"
+                    android:paddingVertical="5dp" android:textColor="#14804A" android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:background="@drawable/bg_user_detail_section"
+            android:orientation="vertical" android:padding="16dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Thông tin liên hệ" android:textColor="@color/home_title"
+                android:textSize="16sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_detail_email" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textColor="#4F5668" android:textSize="15sp" />
+            <TextView android:id="@+id/tv_detail_phone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="#4F5668" android:textSize="15sp" />
+            <TextView android:id="@+id/tv_detail_joined" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="#737B90" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" android:orientation="horizontal">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:background="@drawable/bg_user_detail_section" android:gravity="center" android:orientation="vertical" android:padding="16dp">
+                <TextView android:id="@+id/tv_detail_booking_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/home_primary" android:textSize="21sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Đặt chỗ" android:textColor="#737B90" android:textSize="13sp" />
+            </LinearLayout>
+            <Space android:layout_width="12dp" android:layout_height="1dp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:background="@drawable/bg_user_detail_section" android:gravity="center" android:orientation="vertical" android:padding="16dp">
+                <TextView android:id="@+id/tv_detail_spent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#14804A" android:textSize="18sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Tổng đã chi" android:textColor="#737B90" android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:text="Đặt chỗ gần đây" android:textColor="@color/home_title"
+            android:textSize="17sp" android:textStyle="bold" />
+        <LinearLayout android:id="@+id/layout_detail_history" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:background="@drawable/bg_user_detail_section" android:orientation="vertical" android:padding="16dp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_detail_close"
+            android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="20dp"
+            android:text="Đóng" android:textAllCaps="false" android:textColor="@android:color/white"
+            android:textStyle="bold" android:backgroundTint="@color/home_primary" />
+    </LinearLayout>
+</ScrollView>

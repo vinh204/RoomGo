@@ -4,6 +4,7 @@ import android.util.Log;
 import com.example.homestay.data.dao.*;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.utils.PasswordHasher;
+import com.example.homestay.utils.AdminAuth;
 import java.util.*;
 
 public class HomestayRepository {
@@ -44,7 +45,7 @@ public class HomestayRepository {
   }
 
   public long insertRoom(Room r) {
-    return rooms.insertRoom(r);
+    return rooms.insertExclusiveFeatured(r);
   }
 
   public void insertRooms(List<Room> r) {
@@ -52,17 +53,19 @@ public class HomestayRepository {
   }
 
   public void updateRoom(Room r) {
-    rooms.updateRoom(r);
+    rooms.updateExclusiveFeatured(r);
   }
 
   public void clearFeaturedRooms() {
     rooms.clearFeaturedRooms();
   }
 
-  public void deleteRoom(Room r) {
+  public boolean deleteRoom(Room r) {
+    if (bookings.countByRoomId(r.getId()) > 0) return false;
     favorites.deleteByRoomId(r.getId());
     slots.deleteByRoomId(r.getId());
     rooms.deleteRoom(r);
+    return true;
   }
 
   public List<RoomImage> getRoomImages(long roomId) {
@@ -106,10 +109,14 @@ public class HomestayRepository {
   }
 
   public List<Booking> getAllBookingsNow() {
+    bookings.expirePendingBookings(System.currentTimeMillis());
+    updateDueBookingLifecycle(System.currentTimeMillis());
     return bookings.getAllBookingsNow();
   }
 
   public List<Booking> getDatabaseBookingsForUser(long id) {
+    bookings.expirePendingBookings(System.currentTimeMillis());
+    updateDueBookingLifecycle(System.currentTimeMillis());
     return bookings.getBookingsByUserIdNow(id);
   }
 
@@ -118,11 +125,34 @@ public class HomestayRepository {
   }
 
   public void updateBooking(Booking b) {
+    bookings.expirePendingBookings(System.currentTimeMillis());
+    Booking current = bookings.getBookingById(b.getId());
+    if (current != null
+        && !com.example.homestay.domain.BookingStatusPolicy.canTransition(
+            current.getStatus(), b.getStatus()))
+      throw new IllegalArgumentException("Chuyển trạng thái booking không hợp lệ");
     bookings.updateBooking(b);
   }
 
-  public void deleteBooking(Booking b) {
-    bookings.deleteBooking(b);
+  /** Cập nhật vòng đời lưu trú theo giờ nhận/trả phòng, an toàn khi được gọi lặp lại. */
+  public List<Booking> updateDueBookingLifecycle(long now) {
+    List<Booking> changed = new ArrayList<>();
+    for (Booking booking : bookings.getBookingsNeedingLifecycleUpdate(now)) {
+      int rows =
+          booking.getCheckOutDate() <= now
+              ? bookings.completeConfirmedBookingIfDue(booking.getId(), now)
+              : bookings.checkInConfirmedBookingIfDue(booking.getId(), now);
+      if (rows > 0) {
+        Booking updated = bookings.getBookingById(booking.getId());
+        if (updated != null) changed.add(updated);
+      }
+    }
+    return changed;
+  }
+
+  public boolean deleteBooking(Booking b) {
+    // Booking là chứng từ lịch sử; không xóa cứng trong luồng quản trị.
+    return false;
   }
 
   public int countOverlappingBookings(long room, long in, long out) {
@@ -135,7 +165,7 @@ public class HomestayRepository {
 
   public User login(String email, String password) {
     User u = users.getUserByEmailForLogin(email);
-    return u != null && PasswordHasher.verify(password, u.getPassword()) ? u : null;
+    return u != null && !u.isLocked() && PasswordHasher.verify(password, u.getPassword()) ? u : null;
   }
 
   public User getUserByEmail(String e) {
@@ -154,7 +184,23 @@ public class HomestayRepository {
     return users.insertUser(u.withPassword(PasswordHasher.hash(u.getPassword())));
   }
 
+  public void ensureAdminAccount() {
+    if (users.getUserByEmail(AdminAuth.EMAIL) == null)
+      insertUser(
+          new User(
+              0,
+              AdminAuth.EMAIL,
+              "admin-local",
+              "Admin@123",
+              "Administrator",
+              System.currentTimeMillis(),
+              false,
+              "ADMIN"));
+  }
+
   public void updateUser(User u) {
+    if (AdminAuth.EMAIL.equalsIgnoreCase(u.getEmail()) && !u.isAdmin())
+      throw new IllegalArgumentException("Email này được dành riêng cho quản trị viên");
     User old = users.getUserById(u.getId());
     if (old != null
         && !u.getPassword().equals(old.getPassword())
@@ -163,9 +209,11 @@ public class HomestayRepository {
     users.updateUser(u);
   }
 
-  public void deleteUser(User u) {
+  public boolean deleteUser(User u) {
+    if (bookings.countByUserId(u.getId()) > 0) return false;
     favorites.deleteByUserId(u.getId());
     users.deleteUser(u);
+    return true;
   }
 
   public List<Long> getFavoriteRoomIdsNow(long id) {
@@ -196,6 +244,26 @@ public class HomestayRepository {
     return bookings.countByRoomId(id) > 0;
   }
 
+  /** Số phòng tối thiểu cần giữ để không làm sai các booking đang còn hiệu lực. */
+  public int requiredRoomQuantity(long roomId) {
+    List<Booking> active = new ArrayList<>();
+    for (Booking booking : bookings.getAllBookingsNow())
+      if (booking.getRoomId() == roomId
+          && ("pending".equals(booking.getStatus())
+              || "confirmed".equals(booking.getStatus())
+              || "checked_in".equals(booking.getStatus())))
+        active.add(booking);
+    int required = 0;
+    for (Booking anchor : active) {
+      int overlapping = 0;
+      for (Booking candidate : active)
+        if (candidate.getCheckInDate() < anchor.getCheckOutDate()
+            && candidate.getCheckOutDate() > anchor.getCheckInDate()) overlapping++;
+      required = Math.max(required, overlapping);
+    }
+    return required;
+  }
+
   public boolean userHasBookings(long id) {
     return bookings.countByUserId(id) > 0;
   }
@@ -221,6 +289,7 @@ public class HomestayRepository {
   }
 
   public void syncBookingNotifications(long userId) {
+    updateDueBookingLifecycle(System.currentTimeMillis());
     Map<Long, Room> map = new HashMap<>();
     for (Room r : rooms.getAllRoomsNow()) map.put(r.getId(), r);
     for (Booking b : bookings.getBookingsByUserIdNow(userId)) {
@@ -234,6 +303,10 @@ public class HomestayRepository {
           title = "Đặt phòng đã được xác nhận";
           message = "Booking tại " + room + " đã được xác nhận.";
           break;
+        case "checked_in":
+          title = "Đã đến giờ nhận phòng";
+          message = "Chúc bạn có kỳ lưu trú vui vẻ tại " + room + ".";
+          break;
         case "cancelled":
           title = "Đặt phòng đã bị hủy";
           message =
@@ -243,13 +316,19 @@ public class HomestayRepository {
                   + (b.getCancellationReason() == null
                       ? ""
                       : " Lý do: " + b.getCancellationReason() + ".")
-                  + " Khoản hoàn dự kiến: "
-                  + com.example.homestay.utils.DisplayFormatter.vnd(b.getRefundAmount())
-                  + ".";
+                  + (b.getRefundAmount() > 0
+                      ? " Khoản hoàn dự kiến: "
+                          + com.example.homestay.utils.DisplayFormatter.vnd(b.getRefundAmount())
+                          + "."
+                      : " Không phát sinh khoản hoàn." );
           break;
         case "completed":
           title = "Chuyến đi đã hoàn thành";
           message = "Cảm ơn bạn đã lưu trú tại " + room + ". Hãy chia sẻ đánh giá của bạn.";
+          break;
+        case "expired":
+          title = "Yêu cầu đặt phòng đã hết hạn";
+          message = "Yêu cầu đặt " + room + " đã hết thời gian giữ phòng do chưa được xác nhận.";
           break;
         default:
           title = "Đã gửi yêu cầu đặt phòng";
@@ -271,6 +350,7 @@ public class HomestayRepository {
   }
 
   public List<AppNotification> syncAdminActivityNotifications() {
+    updateDueBookingLifecycle(System.currentTimeMillis());
     User admin = users.getUserByEmail("admin@gmail.com");
     if (admin == null) return Collections.emptyList();
     long adminId = admin.getId();
@@ -334,6 +414,38 @@ public class HomestayRepository {
                 booking.getRoomId(),
                 false,
                 booking.getCancelledAt()));
+      }
+      if ("completed".equals(booking.getStatus())) {
+        notifications.insert(
+            new AppNotification(
+                0,
+                adminId,
+                "admin_booking_completed_" + booking.getId(),
+                "Lưu trú đã tự động hoàn thành",
+                (room == null ? "Booking" : room.getName())
+                    + " đã qua giờ trả phòng và được chuyển sang Hoàn thành.",
+                "admin_booking",
+                booking.getId(),
+                booking.getRoomId(),
+                false,
+                Math.max(booking.getCheckOutDate(), booking.getCreatedAt())));
+      }
+      if ("checked_in".equals(booking.getStatus())) {
+        notifications.insert(
+            new AppNotification(
+                0,
+                adminId,
+                "admin_booking_checked_in_" + booking.getId(),
+                "Khách đang trong kỳ lưu trú",
+                (user == null ? "Khách hàng" : user.getFullName())
+                    + " đã đến giờ nhận "
+                    + (room == null ? "phòng" : room.getName())
+                    + ".",
+                "admin_booking",
+                booking.getId(),
+                booking.getRoomId(),
+                false,
+                Math.max(booking.getCheckInDate(), booking.getCreatedAt())));
       }
     }
 
@@ -485,6 +597,80 @@ public class HomestayRepository {
                 "Phòng gia đình",
                 32,
                 2)));
+  }
+
+  /** Tạo dữ liệu có đủ trạng thái để dùng khi thuyết trình/demo. */
+  public void seedDemoData() {
+    seedLocalRoomsIfNeeded();
+    User customer = users.getUserByEmail("demo@roomgo.vn");
+    if (customer == null) {
+      long userId =
+          insertUser(
+              new User(
+                  0,
+                  "demo@roomgo.vn",
+                  "0900000000",
+                  "Demo@123",
+                  "Khách hàng Demo",
+                  System.currentTimeMillis() - 30L * 86400000L));
+      customer = users.getUserById(userId);
+    }
+    if (customer == null || !bookings.getAllBookingsNow().isEmpty()) return;
+
+    List<Room> demoRooms = rooms.getAllRoomsNow();
+    if (demoRooms.isEmpty()) return;
+    long now = System.currentTimeMillis();
+    long created = now - 3600000L;
+    Room first = demoRooms.get(0);
+    Room second = demoRooms.get(Math.min(1, demoRooms.size() - 1));
+    Room third = demoRooms.get(Math.min(2, demoRooms.size() - 1));
+    Room fourth = demoRooms.get(Math.min(3, demoRooms.size() - 1));
+    Room fifth = demoRooms.get(Math.min(4, demoRooms.size() - 1));
+
+    bookings.insertBooking(
+        demoBooking(customer.getId(), first, dayAt(now, 2, 14), dayAt(now, 4, 12),
+            "pending", "UNPAID", created, created + 7200000L));
+    bookings.insertBooking(
+        demoBooking(customer.getId(), second, dayAt(now, 3, 14), dayAt(now, 5, 12),
+            "confirmed", "UNPAID", created - 3600000L, 0));
+    bookings.insertBooking(
+        demoBooking(customer.getId(), third, dayAt(now, -1, 14), dayAt(now, 1, 12),
+            "checked_in", "PAID", created - 7200000L, 0));
+    bookings.insertBooking(
+        demoBooking(customer.getId(), fourth, dayAt(now, -6, 14), dayAt(now, -4, 12),
+            "completed", "PAID", created - 10800000L, 0));
+    Booking cancelled =
+        demoBooking(customer.getId(), fifth, dayAt(now, 6, 14), dayAt(now, 8, 12),
+            "confirmed", "PAID", created - 14400000L, 0)
+            .cancelled("Khách thay đổi kế hoạch", 0, now - 1800000L);
+    bookings.insertBooking(cancelled);
+  }
+
+  private static Booking demoBooking(
+      long userId,
+      Room room,
+      long checkIn,
+      long checkOut,
+      String status,
+      String paymentStatus,
+      long createdAt,
+      long expiresAt) {
+    long nights = Math.max(1, com.example.homestay.domain.BookingCalculator.nights(checkIn, checkOut));
+    return new Booking(
+        0, null, room.getId(), null, null, null, userId, null,
+        checkIn, checkOut, 1, room.getPrice() * nights, status,
+        "Thanh toán khi nhận phòng", createdAt, null, 0, 0, paymentStatus, expiresAt);
+  }
+
+  private static long dayAt(long base, int dayOffset, int hour) {
+    Calendar value = Calendar.getInstance();
+    value.setTimeInMillis(base);
+    value.add(Calendar.DAY_OF_MONTH, dayOffset);
+    value.set(Calendar.HOUR_OF_DAY, hour);
+    value.set(Calendar.MINUTE, 0);
+    value.set(Calendar.SECOND, 0);
+    value.set(Calendar.MILLISECOND, 0);
+    return value.getTimeInMillis();
   }
 
   private static Room seed(

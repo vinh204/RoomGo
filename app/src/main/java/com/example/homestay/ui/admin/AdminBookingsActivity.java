@@ -12,6 +12,8 @@ import com.example.homestay.R;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.model.*;
 import com.example.homestay.data.repository.HomestayRepository;
+import com.example.homestay.domain.BookingStatusPolicy;
+import com.example.homestay.domain.CancellationPolicy;
 import com.example.homestay.utils.*;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -76,6 +78,8 @@ public class AdminBookingsActivity extends AppCompatActivity {
                       ? "pending"
                       : id == R.id.chip_confirmed
                           ? "confirmed"
+                          : id == R.id.chip_checked_in
+                              ? "checked_in"
                           : id == R.id.chip_completed
                               ? "completed"
                               : id == R.id.chip_cancelled ? "cancelled" : null;
@@ -117,6 +121,7 @@ public class AdminBookingsActivity extends AppCompatActivity {
                           b.getTotalPrice(),
                           b.getStatus(),
                           b.getPaymentMethod(),
+                          b.getPaymentStatus(),
                           b.getCreatedAt(),
                           b.getSlotId() == null ? null : String.valueOf(b.getSlotId())));
                 }
@@ -165,14 +170,27 @@ public class AdminBookingsActivity extends AppCompatActivity {
 
   private void showStatus(AdminBookingData b) {
     List<String> values = new ArrayList<>(), labels = new ArrayList<>();
+    if ("cancelled".equalsIgnoreCase(b.getStatus())
+        && "REFUND_PENDING".equals(b.getPaymentStatus())) {
+      new MaterialAlertDialogBuilder(this)
+          .setTitle("Xác nhận hoàn tiền")
+          .setMessage("Đánh dấu khoản hoàn của booking này đã được xử lý?")
+          .setNegativeButton("Để sau", null)
+          .setPositiveButton("Đã hoàn tiền", (dialog, which) -> markRefundProcessed(b.getId()))
+          .show();
+      return;
+    }
     if ("pending".equalsIgnoreCase(b.getStatus())) {
       values.add("confirmed");
       labels.add("Đã xác nhận");
       values.add("cancelled");
       labels.add("Đã hủy");
     } else if ("confirmed".equalsIgnoreCase(b.getStatus())) {
-      values.add("completed");
-      labels.add("Hoàn thành");
+      if (BookingStatusPolicy.canComplete(
+          b.getStatus(), b.getCheckOutDate(), System.currentTimeMillis())) {
+        values.add("completed");
+        labels.add("Hoàn thành");
+      }
       values.add("cancelled");
       labels.add("Đã hủy");
     }
@@ -194,6 +212,26 @@ public class AdminBookingsActivity extends AppCompatActivity {
         .show();
   }
 
+  private void markRefundProcessed(String id) {
+    AppExecutors.io()
+        .execute(
+            () -> {
+              Booking booking = repository.getBookingById(Long.parseLong(id));
+              if (booking != null) {
+                String paymentStatus =
+                    booking.getRefundAmount() < booking.getTotalPrice()
+                        ? "PARTIALLY_REFUNDED"
+                        : "REFUNDED";
+                repository.updateBooking(booking.withPaymentStatus(paymentStatus));
+              }
+              runOnUiThread(
+                  () -> {
+                    toast("Đã cập nhật trạng thái hoàn tiền");
+                    load();
+                  });
+            });
+  }
+
   private void showAdminCancellation(AdminBookingData data) {
     TextInputEditText reason = new TextInputEditText(this);
     reason.setHint("Lý do hủy từ quản trị viên");
@@ -204,7 +242,7 @@ public class AdminBookingsActivity extends AppCompatActivity {
     wrapper.addView(reason);
     new MaterialAlertDialogBuilder(this)
         .setTitle("Hủy booking")
-        .setMessage("Khách hàng sẽ nhận được thông báo kèm lý do và khoản hoàn dự kiến.")
+        .setMessage("Khách sẽ nhận được lý do hủy; chỉ booking đã thanh toán mới phát sinh hoàn tiền.")
         .setView(wrapper)
         .setNegativeButton("Quay lại", null)
         .setPositiveButton(
@@ -222,22 +260,28 @@ public class AdminBookingsActivity extends AppCompatActivity {
     AppExecutors.io()
         .execute(
             () -> {
-              Booking booking = repository.getBookingById(Long.parseLong(id));
-              if (booking != null) {
-                long remaining = booking.getCheckInDate() - System.currentTimeMillis();
-                double refund =
-                    remaining >= 24L * 60 * 60 * 1000
-                        ? booking.getTotalPrice()
-                        : remaining > 0 ? booking.getTotalPrice() * 0.5 : 0;
-                repository.updateBooking(
-                    booking.cancelled(
-                        "Quản trị viên: " + reason, refund, System.currentTimeMillis()));
+              try {
+                Booking booking = repository.getBookingById(Long.parseLong(id));
+                if (booking != null) {
+                  double refund =
+                      "PAID".equals(booking.getPaymentStatus())
+                          ? CancellationPolicy.refund(
+                              booking.getTotalPrice(),
+                              booking.getCheckInDate(),
+                              System.currentTimeMillis())
+                          : 0;
+                  repository.updateBooking(
+                      booking.cancelled(
+                          "Quản trị viên: " + reason, refund, System.currentTimeMillis()));
+                }
+                runOnUiThread(
+                    () -> {
+                      toast("Đã hủy booking và gửi thông báo cho khách");
+                      load();
+                    });
+              } catch (Exception error) {
+                runOnUiThread(() -> toast("Không thể hủy: " + error.getMessage()));
               }
-              runOnUiThread(
-                  () -> {
-                    toast("Đã hủy booking và gửi thông báo cho khách");
-                    load();
-                  });
             });
   }
 
@@ -245,13 +289,21 @@ public class AdminBookingsActivity extends AppCompatActivity {
     AppExecutors.io()
         .execute(
             () -> {
-              Booking b = repository.getBookingById(Long.parseLong(id));
-              if (b != null) repository.updateBooking(b.withStatus(status, b.getPaymentMethod()));
-              runOnUiThread(
-                  () -> {
-                    toast("Cập nhật trạng thái thành công!");
-                    load();
-                  });
+              try {
+                Booking b = repository.getBookingById(Long.parseLong(id));
+                if (b != null) {
+                  Booking updated = b.withStatus(status, b.getPaymentMethod());
+                  if ("completed".equals(status)) updated = updated.withPaymentStatus("PAID");
+                  repository.updateBooking(updated);
+                }
+                runOnUiThread(
+                    () -> {
+                      toast("Cập nhật trạng thái thành công!");
+                      load();
+                    });
+              } catch (Exception error) {
+                runOnUiThread(() -> toast("Không thể cập nhật: " + error.getMessage()));
+              }
             });
   }
 
@@ -266,11 +318,13 @@ public class AdminBookingsActivity extends AppCompatActivity {
                     .execute(
                         () -> {
                           Booking value = repository.getBookingById(Long.parseLong(b.getId()));
-                          if (value != null) repository.deleteBooking(value);
+                          boolean deleted = value != null && repository.deleteBooking(value);
                           runOnUiThread(
                               () -> {
-                                adapter.removeBooking(b.getId());
-                                toast("Xóa booking thành công!");
+                                if (deleted) {
+                                  adapter.removeBooking(b.getId());
+                                  toast("Xóa booking đã hủy thành công!");
+                                } else toast("Chỉ có thể xóa booking đã hủy");
                               });
                         }))
         .setNegativeButton("Hủy", null)

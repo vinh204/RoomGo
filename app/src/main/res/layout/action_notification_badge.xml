@@ -25,7 +25,7 @@
         android:minWidth="20dp"
         android:paddingHorizontal="3dp"
         android:textColor="@android:color/white"
-        android:textSize="10sp"
+        android:textSize="11sp"
         android:textStyle="bold"
         android:visibility="gone" />
 </FrameLayout>

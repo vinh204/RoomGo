@@ -5,6 +5,7 @@ import com.example.homestay.data.database.HomestayDatabase;
 import com.example.homestay.data.repository.*;
 import com.example.homestay.utils.AppExecutors;
 import com.example.homestay.utils.SystemNotificationHelper;
+import com.example.homestay.worker.BookingMaintenanceScheduler;
 
 public class HomestayApplication extends Application {
   private HomestayDatabase database;
@@ -43,8 +44,19 @@ public class HomestayApplication extends Application {
     if (bookingRepository == null)
       bookingRepository =
           new BookingRepository(
-              getDatabase().bookingDao(), getDatabase().roomDao(), getDatabase().userDao());
+              getDatabase().bookingDao(), getDatabase().roomDao(), getDatabase().slotDao());
     return bookingRepository;
+  }
+
+  /** Xóa dữ liệu cục bộ và tạo lại bộ dữ liệu phục vụ trình diễn. Gọi trên luồng nền. */
+  public void resetDemoData() {
+    getDatabase().clearAllTables();
+    getRepository().ensureAdminAccount();
+    getRepository().seedDemoData();
+    getSharedPreferences("DemoData", MODE_PRIVATE)
+        .edit()
+        .putBoolean("rooms_seeded", true)
+        .apply();
   }
 
   @Override
@@ -54,14 +66,16 @@ public class HomestayApplication extends Application {
     AppExecutors.io()
         .execute(
             () -> {
+              getRepository().ensureAdminAccount();
               if (!getSharedPreferences("DemoData", MODE_PRIVATE)
                   .getBoolean("rooms_seeded", false)) {
-                getRepository().seedLocalRoomsIfNeeded();
+                getRepository().seedDemoData();
                 getSharedPreferences("DemoData", MODE_PRIVATE)
                     .edit()
                     .putBoolean("rooms_seeded", true)
                     .apply();
               }
+              BookingMaintenanceScheduler.schedule(this);
             });
   }
 }

@@ -18,6 +18,7 @@ import com.example.homestay.ui.customer.MainActivity;
 import com.example.homestay.utils.AdminAuth;
 import com.example.homestay.utils.AppExecutors;
 import com.example.homestay.utils.SessionManager;
+import com.example.homestay.utils.RateLimiter;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -105,6 +106,16 @@ public class LoginActivity extends AppCompatActivity {
   }
 
   private void loginAdmin(String password) {
+    RateLimiter.AttemptStatus attempt = RateLimiter.canAttemptLogin(this, AdminAuth.EMAIL);
+    if (!attempt.allowed) {
+      long minutes = Math.max(1, RateLimiter.getLockedMinutesRemaining(this, AdminAuth.EMAIL));
+      Toast.makeText(
+              this,
+              "Đăng nhập tạm khóa. Vui lòng thử lại sau " + minutes + " phút.",
+              Toast.LENGTH_SHORT)
+          .show();
+      return;
+    }
     AppExecutors.io()
         .execute(
             () -> {
@@ -129,16 +140,22 @@ public class LoginActivity extends AppCompatActivity {
                                 "admin-local",
                                 password,
                                 "Administrator",
-                                System.currentTimeMillis()));
+                                System.currentTimeMillis(),
+                                false,
+                                "ADMIN"));
                 user = app.getRepository().getUserById(id);
               }
-              User authenticatedAdmin = user;
-              if (authenticatedAdmin != null)
+              User authenticatedAdmin = user != null && user.isAdmin() ? user : null;
+              if (authenticatedAdmin != null) {
+                RateLimiter.recordSuccess(this, AdminAuth.EMAIL);
                 sessionManager.saveSession(
                     authenticatedAdmin.getId(),
                     "local-admin",
                     authenticatedAdmin.getEmail(),
                     authenticatedAdmin.getFullName());
+              } else {
+                RateLimiter.recordFailure(this, AdminAuth.EMAIL);
+              }
               runOnUiThread(
                   () -> {
                     if (authenticatedAdmin == null) {

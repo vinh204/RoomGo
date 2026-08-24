@@ -90,12 +90,13 @@ public class AdminUsersActivity extends AppCompatActivity {
                 for (Booking b : all)
                   if (b.getUserId() == u.getId()) {
                     count++;
-                    if ("completed".equals(b.getStatus())) spent += b.getTotalPrice();
+                    if ("PAID".equals(b.getPaymentStatus())) spent += b.getTotalPrice();
                     if (last == null || b.getCreatedAt() > last) last = b.getCreatedAt();
                   }
                 RateLimiter.AttemptStatus can = RateLimiter.canAttemptLogin(this, u.getEmail());
                 int failed = RateLimiter.getFailedAttempts(this, u.getEmail());
                 long seconds = RateLimiter.getLockedSecondsRemaining(this, u.getEmail());
+                boolean permanentlyLocked = u.isLocked();
                 result.add(
                     new AdminUserData(
                         String.valueOf(u.getId()),
@@ -104,8 +105,8 @@ public class AdminUsersActivity extends AppCompatActivity {
                         u.getFullName(),
                         u.getCreatedAt(),
                         failed,
-                        !can.allowed,
-                        !can.allowed && seconds > 365L * 24 * 3600,
+                        permanentlyLocked || !can.allowed,
+                        permanentlyLocked,
                         can.lockedUntil,
                         seconds,
                         count,
@@ -146,46 +147,94 @@ public class AdminUsersActivity extends AppCompatActivity {
                 if (String.valueOf(b.getUserId()).equals(u.getId())) history.add(b);
               history.sort((a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
               SimpleDateFormat date = new SimpleDateFormat("dd/MM/yyyy", new Locale("vi", "VN"));
-              StringBuilder h = new StringBuilder();
-              for (int i = 0; i < Math.min(10, history.size()); i++) {
-                Booking b = history.get(i);
-                Room room = rooms.get(b.getRoomId());
-                h.append("• ")
-                    .append(room == null ? "Phòng #" + b.getRoomId() : room.getName())
-                    .append(" — ")
-                    .append(date.format(new Date(b.getCheckInDate())))
-                    .append(" — ")
-                    .append(b.getStatus())
-                    .append('\n');
-              }
-              if (h.length() == 0) h.append("Chưa có lịch sử đặt phòng");
               String spent =
                   NumberFormat.getNumberInstance(new Locale("vi", "VN"))
                       .format((long) u.getTotalSpent());
-              runOnUiThread(
-                  () ->
-                      new MaterialAlertDialogBuilder(this)
-                          .setTitle(u.getFullName())
-                          .setMessage(
-                              "Mã người dùng: "
-                                  + u.getId()
-                                  + "\nEmail: "
-                                  + u.getEmail()
-                                  + "\nĐiện thoại: "
-                                  + u.getPhone()
-                                  + "\nNgày tham gia: "
-                                  + date.format(new Date(u.getCreatedAt()))
-                                  + "\nTrạng thái: "
-                                  + (Boolean.TRUE.equals(u.getLocked()) ? "Bị khóa" : "Hoạt động")
-                                  + "\nTổng booking: "
-                                  + u.getBookingCount()
-                                  + "\nTổng đã chi: "
-                                  + spent
-                                  + " đ\n\nLịch sử gần đây:\n"
-                                  + h)
-                          .setPositiveButton("Đóng", null)
-                          .show());
+              runOnUiThread(() -> showUserDetails(u, history, rooms, date, spent));
             });
+  }
+
+  private void showUserDetails(
+      AdminUserData user,
+      List<Booking> history,
+      Map<Long, Room> rooms,
+      SimpleDateFormat date,
+      String spent) {
+    View view = getLayoutInflater().inflate(R.layout.dialog_admin_user_details, null);
+    ((TextView) view.findViewById(R.id.tv_detail_name)).setText(user.getFullName());
+    TextView status = view.findViewById(R.id.tv_detail_status);
+    boolean locked = Boolean.TRUE.equals(user.getLocked());
+    status.setText(locked ? "Đã khóa" : "Đang hoạt động");
+    status.setBackgroundResource(
+        locked ? R.drawable.bg_unavailable_chip : R.drawable.bg_available_chip);
+    status.setTextColor(android.graphics.Color.parseColor(locked ? "#C83D3D" : "#14804A"));
+    ((TextView) view.findViewById(R.id.tv_detail_email)).setText("Email  •  " + user.getEmail());
+    ((TextView) view.findViewById(R.id.tv_detail_phone))
+        .setText("Điện thoại  •  " + user.getPhone());
+    ((TextView) view.findViewById(R.id.tv_detail_joined))
+        .setText("Tham gia " + date.format(new Date(user.getCreatedAt())) + "  •  ID " + user.getId());
+    ((TextView) view.findViewById(R.id.tv_detail_booking_count))
+        .setText(String.valueOf(user.getBookingCount()));
+    ((TextView) view.findViewById(R.id.tv_detail_spent)).setText(spent + " đ");
+
+    LinearLayout historyLayout = view.findViewById(R.id.layout_detail_history);
+    if (history.isEmpty()) {
+      addHistoryText(historyLayout, "Chưa có lịch sử đặt chỗ", "#737B90", false, 0);
+    } else {
+      for (int i = 0; i < Math.min(3, history.size()); i++) {
+        Booking booking = history.get(i);
+        Room room = rooms.get(booking.getRoomId());
+        String roomName = room == null ? "Phòng #" + booking.getRoomId() : room.getName();
+        addHistoryText(historyLayout, roomName, "#101623", true, i == 0 ? 0 : 14);
+        addHistoryText(
+            historyLayout,
+            date.format(new Date(booking.getCheckInDate()))
+                + "  •  "
+                + bookingStatusLabel(booking.getStatus()),
+            "#737B90",
+            false,
+            3);
+      }
+    }
+    androidx.appcompat.app.AlertDialog dialog =
+        new MaterialAlertDialogBuilder(this).setView(view).create();
+    view.findViewById(R.id.btn_detail_close).setOnClickListener(v -> dialog.dismiss());
+    dialog.show();
+  }
+
+  private void addHistoryText(
+      LinearLayout parent, String value, String color, boolean bold, int marginTopDp) {
+    TextView text = new TextView(this);
+    text.setText(value);
+    text.setTextSize(bold ? 15 : 14);
+    text.setTextColor(android.graphics.Color.parseColor(color));
+    if (bold) text.setTypeface(text.getTypeface(), android.graphics.Typeface.BOLD);
+    LinearLayout.LayoutParams params =
+        new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    params.topMargin = Math.round(marginTopDp * getResources().getDisplayMetrics().density);
+    parent.addView(text, params);
+  }
+
+  private String bookingStatusLabel(String status) {
+    if (status == null) return "Không xác định";
+    switch (status.toLowerCase(Locale.ROOT)) {
+      case "pending":
+        return "Chờ duyệt";
+      case "confirmed":
+        return "Đã xác nhận";
+      case "checked_in":
+        return "Đang lưu trú";
+      case "completed":
+        return "Hoàn thành";
+      case "cancelled":
+      case "canceled":
+        return "Đã hủy";
+      case "expired":
+        return "Hết hạn";
+      default:
+        return status;
+    }
   }
 
   private void edit(AdminUserData data) {
@@ -244,8 +293,11 @@ public class AdminUsersActivity extends AppCompatActivity {
                             runOnUiThread(() -> phone.setError("Số điện thoại đã được sử dụng"));
                             return;
                           }
-                          repository.updateUser(
-                              current.updated(n, e, p, pw.isEmpty() ? current.getPassword() : pw));
+                          User updated =
+                              current
+                                  .updated(n, e, p, pw.isEmpty() ? current.getPassword() : pw)
+                                  .withLocked(locked.isChecked());
+                          repository.updateUser(updated);
                           if (!data.getEmail().equalsIgnoreCase(e))
                             RateLimiter.reset(this, data.getEmail());
                           boolean wasLocked = Boolean.TRUE.equals(data.getLocked());

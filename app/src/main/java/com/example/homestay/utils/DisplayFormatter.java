@@ -32,6 +32,22 @@ public final class DisplayFormatter {
     return new SimpleDateFormat("dd/MM/yyyy", VIETNAMESE).format(new Date(timestamp));
   }
 
+  public static String paymentStatus(String value) {
+    if (value == null) return "Chưa thanh toán";
+    switch (value.toUpperCase(Locale.ROOT)) {
+      case "PAID":
+        return "Đã thanh toán";
+      case "REFUND_PENDING":
+        return "Chờ hoàn tiền";
+      case "REFUNDED":
+        return "Đã hoàn tiền";
+      case "PARTIALLY_REFUNDED":
+        return "Đã hoàn một phần";
+      default:
+        return "Chưa thanh toán";
+    }
+  }
+
   private static String leftPad(String value, int length) {
     StringBuilder result = new StringBuilder(value);
     while (result.length() < length) result.insert(0, '0');

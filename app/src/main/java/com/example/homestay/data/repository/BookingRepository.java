@@ -3,16 +3,21 @@ package com.example.homestay.data.repository;
 import com.example.homestay.data.dao.*;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.model.*;
+import com.example.homestay.domain.BookingCalculator;
 import com.example.homestay.domain.BookingRules;
+import com.example.homestay.domain.BookingStatusPolicy;
 import java.util.Calendar;
 
 public final class BookingRepository {
+  private static final long PENDING_HOLD_MS = 2L * 60 * 60 * 1000;
   private final BookingDao bookingDao;
   private final RoomDao roomDao;
+  private final SlotDao slotDao;
 
-  public BookingRepository(BookingDao b, RoomDao r, UserDao u) {
+  public BookingRepository(BookingDao b, RoomDao r, SlotDao s) {
     bookingDao = b;
     roomDao = r;
+    slotDao = s;
   }
 
   public OperationResult<BookingData> createBooking(
@@ -23,24 +28,37 @@ public final class BookingRepository {
       CreateBookingRequest request) {
     Room room = roomDao.getRoomById(localRoomId);
     if (room == null) return OperationResult.failure(new Exception("Không tìm thấy phòng"));
-    int occupied =
-        bookingDao.countOverlappingBookings(
-            localRoomId, request.getCheckInDate(), request.getCheckOutDate());
+    if (!room.isAvailable())
+      return OperationResult.failure(new Exception("Phòng đang tạm ngưng nhận đặt chỗ"));
     String error =
         BookingRules.validate(
             request.getCheckInDate(),
             request.getCheckOutDate(),
             request.getGuestCount(),
             room.getMaxGuests(),
-            occupied,
+            0,
             room.getMaxSlots(),
-            startOfToday());
+            System.currentTimeMillis());
     if (error != null) return OperationResult.failure(new Exception(error));
     Long slot = null;
     try {
       if (request.getSlotId() != null) slot = Long.parseLong(request.getSlotId());
     } catch (NumberFormatException ignored) {
     }
+    Slot selectedSlot = slot == null ? null : slotDao.getSlotById(slot);
+    if (selectedSlot != null && selectedSlot.getRoomId() != localRoomId)
+      return OperationResult.failure(new Exception("Lựa chọn phòng không hợp lệ"));
+    if (selectedSlot != null && !selectedSlot.isAvailable())
+      return OperationResult.failure(new Exception("Lựa chọn phòng hiện không còn hoạt động"));
+    double totalPrice =
+        BookingCalculator.total(
+            room, selectedSlot, request.getCheckInDate(), request.getCheckOutDate());
+    if (totalPrice <= 0)
+      return OperationResult.failure(new Exception("Không thể tính tổng tiền đặt phòng"));
+    if (Math.abs(totalPrice - request.getTotalPrice()) >= 1d)
+      return OperationResult.failure(
+          new Exception("Giá phòng vừa thay đổi. Vui lòng mở lại thông tin đặt phòng"));
+    long createdAt = System.currentTimeMillis();
     Booking value =
         new Booking(
             0,
@@ -54,24 +72,32 @@ public final class BookingRepository {
             request.getCheckInDate(),
             request.getCheckOutDate(),
             request.getGuestCount(),
-            request.getTotalPrice(),
+            totalPrice,
             "pending",
             request.getPaymentMethod(),
-            System.currentTimeMillis(),
+            createdAt,
             null,
             0,
-            0);
-    long id = bookingDao.insertBooking(value);
+            0,
+            "UNPAID",
+            createdAt + PENDING_HOLD_MS);
+    long id = bookingDao.insertIfCapacityAvailable(value, room.getMaxSlots());
+    if (id < 0)
+      return OperationResult.failure(new Exception("Phòng đã hết chỗ trong khoảng ngày đã chọn"));
     return OperationResult.success(new BookingData(value.withId(id), String.valueOf(id)));
   }
 
   public OperationResult<BookingData> updateBooking(
       String mongoBookingId, long id, UpdateBookingRequest request) {
+    bookingDao.expirePendingBookings(System.currentTimeMillis());
     Booking current = bookingDao.getBookingById(id);
     if (current == null) return OperationResult.failure(new Exception("Không tìm thấy booking"));
+    String nextStatus = request.getStatus() == null ? current.getStatus() : request.getStatus();
+    if (!BookingStatusPolicy.canTransition(current.getStatus(), nextStatus))
+      return OperationResult.failure(new Exception("Chuyển trạng thái booking không hợp lệ"));
     Booking updated =
         current.withStatus(
-            request.getStatus() == null ? current.getStatus() : request.getStatus(),
+            nextStatus,
             request.getPaymentMethod() == null
                 ? current.getPaymentMethod()
                 : request.getPaymentMethod());
@@ -85,15 +111,6 @@ public final class BookingRepository {
 
   public int countOverlappingBookings(long room, long in, long out) {
     return bookingDao.countOverlappingBookings(room, in, out);
-  }
-
-  private long startOfToday() {
-    Calendar c = Calendar.getInstance();
-    c.set(Calendar.HOUR_OF_DAY, 0);
-    c.set(Calendar.MINUTE, 0);
-    c.set(Calendar.SECOND, 0);
-    c.set(Calendar.MILLISECOND, 0);
-    return c.getTimeInMillis();
   }
 
   public static final class BookingData {

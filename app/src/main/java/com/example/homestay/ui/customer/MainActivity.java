@@ -24,6 +24,8 @@ import com.example.homestay.data.entity.*;
 import com.example.homestay.data.repository.*;
 import com.example.homestay.domain.RoomSearchEngine;
 import com.example.homestay.domain.BookingCalculator;
+import com.example.homestay.domain.BookingStatusPolicy;
+import com.example.homestay.domain.CancellationPolicy;
 import com.example.homestay.ui.admin.AdminDashboardActivity;
 import com.example.homestay.ui.adapter.*;
 import com.example.homestay.ui.auth.LoginActivity;
@@ -309,10 +311,13 @@ public class MainActivity extends AppCompatActivity {
           List<Booking> bookings = repository.getAllBookingsNow();
           List<Room> filtered =
               RoomSearchEngine.filter(all, bookings, query, guests, checkIn, checkOut, sort);
-          Room special = RoomSearchEngine.featured(all);
+          Map<Long, Integer> availability = availability(all, bookings);
+          Room special = RoomSearchEngine.featured(filtered);
           Room finalSpecial = special;
           runOnUiThread(
               () -> {
+                adapter.submitAvailability(availability);
+                featured.submitAvailability(availability);
                 adapter.submitList(filtered);
                 featured.submitList(
                     finalSpecial == null
@@ -371,12 +376,26 @@ public class MainActivity extends AppCompatActivity {
           favorites.addAll(ids);
           List<Room> out = new ArrayList<>();
           for (Room r : repository.getAllRoomsNow()) if (ids.contains(r.getId())) out.add(r);
+          List<Booking> bookings = repository.getAllBookingsNow();
+          Map<Long, Integer> availability = availability(out, bookings);
           runOnUiThread(
               () -> {
+                adapter.submitAvailability(availability);
                 adapter.submitList(out);
                 empty.setVisibility(out.isEmpty() ? View.VISIBLE : View.GONE);
               });
         });
+  }
+
+  private Map<Long, Integer> availability(List<Room> rooms, List<Booking> bookings) {
+    long from = checkIn >= 0 && checkOut > checkIn ? checkIn : System.currentTimeMillis();
+    long to = checkIn >= 0 && checkOut > checkIn ? checkOut : from + 1;
+    Map<Long, Integer> values = new HashMap<>();
+    for (Room room : rooms) {
+      int occupied = RoomSearchEngine.occupiedSlots(room.getId(), bookings, from, to);
+      values.put(room.getId(), Math.max(0, room.getMaxSlots() - occupied));
+    }
+    return values;
   }
 
   private void setupBookings() {
@@ -476,9 +495,9 @@ public class MainActivity extends AppCompatActivity {
     admin.setOnClickListener(
         v -> {
           Intent i = new Intent(this, AdminDashboardActivity.class);
-          i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+          i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
           startActivity(i);
-          finish();
+          overridePendingTransition(0, 0);
         });
     logout.setText(preview ? "Đăng xuất admin" : "Đăng xuất");
     logout.setOnClickListener(
@@ -517,9 +536,20 @@ public class MainActivity extends AppCompatActivity {
     v.findViewById(R.id.btn_save)
         .setOnClickListener(
             x -> {
-              String full = text(name).trim(), password = text(pass);
+              String full = text(name).trim(),
+                  newEmail = text(email).trim(),
+                  newPhone = InputValidator.normalizePhoneNumber(text(phone).trim()),
+                  password = text(pass);
               if (full.length() < 2) {
                 name.setError("Họ tên không hợp lệ");
+                return;
+              }
+              if (!InputValidator.validateEmail(newEmail)) {
+                email.setError("Email không hợp lệ");
+                return;
+              }
+              if (!InputValidator.validatePhoneNumber(newPhone)) {
+                phone.setError("Số điện thoại không hợp lệ");
                 return;
               }
               if (!password.isEmpty() && !password.equals(text(confirm))) {
@@ -537,6 +567,8 @@ public class MainActivity extends AppCompatActivity {
                             userId,
                             session.getMongoUserId(),
                             full,
+                            newEmail,
+                            newPhone,
                             password.isEmpty() ? null : password);
                     runOnUiThread(
                         () -> {
@@ -571,7 +603,7 @@ public class MainActivity extends AppCompatActivity {
         v,
         R.id.tv_detail_location,
         r == null ? "Không có thông tin địa chỉ" : r.getLocation() + " · " + r.getAddress());
-    SimpleDateFormat d = new SimpleDateFormat("dd/MM/yyyy · HH:mm", new Locale("vi", "VN")),
+    SimpleDateFormat d = new SimpleDateFormat("dd/MM/yyyy\nHH:mm", new Locale("vi", "VN")),
         dt = new SimpleDateFormat("dd/MM/yyyy, HH:mm", new Locale("vi", "VN"));
     set(v, R.id.tv_detail_check_in, d.format(new Date(b.getCheckInDate())));
     set(v, R.id.tv_detail_check_out, d.format(new Date(b.getCheckOutDate())));
@@ -586,7 +618,9 @@ public class MainActivity extends AppCompatActivity {
         "Thanh toán: "
             + ("pay_on_site".equals(b.getPaymentMethod())
                 ? "Khi nhận phòng"
-                : "Chưa chọn phương thức"));
+                : "Chưa chọn phương thức")
+            + " • "
+            + DisplayFormatter.paymentStatus(b.getPaymentStatus()));
     set(v, R.id.tv_detail_created, "Thời gian đặt: " + dt.format(new Date(b.getCreatedAt())));
     set(v, R.id.tv_detail_total, DisplayFormatter.vnd(b.getTotalPrice()));
     MaterialButton room = v.findViewById(R.id.btn_detail_view_room);
@@ -606,8 +640,7 @@ public class MainActivity extends AppCompatActivity {
         });
     MaterialButton cancel = v.findViewById(R.id.btn_detail_cancel_booking);
     boolean cancellable =
-        ("pending".equals(b.getStatus()) || "confirmed".equals(b.getStatus()))
-            && System.currentTimeMillis() < b.getCheckInDate();
+        BookingStatusPolicy.canCancel(b.getStatus(), b.getCheckInDate(), System.currentTimeMillis());
     cancel.setVisibility(cancellable ? View.VISIBLE : View.GONE);
     cancel.setOnClickListener(
         x -> {
@@ -633,13 +666,14 @@ public class MainActivity extends AppCompatActivity {
   private void showCancelBooking(BookingWithRoom item) {
     Booking booking = item.getBooking();
     long now = System.currentTimeMillis();
-    if (!("pending".equals(booking.getStatus()) || "confirmed".equals(booking.getStatus()))
-        || now >= booking.getCheckInDate()) {
+    if (!BookingStatusPolicy.canCancel(booking.getStatus(), booking.getCheckInDate(), now)) {
       toast("Booking này không thể hủy");
       return;
     }
-    long remaining = booking.getCheckInDate() - now;
-    double refund = remaining >= 24L * 60 * 60 * 1000 ? booking.getTotalPrice() : booking.getTotalPrice() * 0.5;
+    double refund =
+        "PAID".equals(booking.getPaymentStatus())
+            ? CancellationPolicy.refund(booking.getTotalPrice(), booking.getCheckInDate(), now)
+            : 0;
     String[] reasons = {"Thay đổi kế hoạch", "Đặt nhầm ngày", "Tìm được phòng khác", "Lý do khác"};
     LinearLayout content = new LinearLayout(this);
     content.setOrientation(LinearLayout.VERTICAL);
@@ -650,8 +684,9 @@ public class MainActivity extends AppCompatActivity {
         (item.getRoom() == null ? "Phòng đã đặt" : item.getRoom().getName())
             + "\n"
             + DisplayFormatter.bookingCode(booking.getId(), booking.getCreatedAt())
-            + "\nKhoản hoàn dự kiến: "
-            + DisplayFormatter.vnd(refund));
+            + (refund > 0
+                ? "\nKhoản hoàn dự kiến: " + DisplayFormatter.vnd(refund)
+                : "\nBạn chưa thanh toán nên không phát sinh khoản hoàn."));
     summary.setTextSize(15);
     summary.setTextColor(getColor(R.color.home_text));
     content.addView(summary);
@@ -684,15 +719,25 @@ public class MainActivity extends AppCompatActivity {
               String finalReason = reason;
               executor.execute(
                   () -> {
-                    Booking current = repository.getBookingById(booking.getId());
-                    if (current != null)
-                      repository.updateBooking(current.cancelled(finalReason, refund, System.currentTimeMillis()));
-                    runOnUiThread(
-                        () -> {
-                          toast("Đã hủy đặt chỗ. Khoản hoàn dự kiến: " + DisplayFormatter.vnd(refund));
-                          setupBookings();
-                          refreshBadge();
-                        });
+                    try {
+                      Booking current = repository.getBookingById(booking.getId());
+                      if (current != null)
+                        repository.updateBooking(
+                            current.cancelled(finalReason, refund, System.currentTimeMillis()));
+                      runOnUiThread(
+                          () -> {
+                            toast(
+                                refund > 0
+                                    ? "Đã hủy. Khoản hoàn dự kiến: "
+                                        + DisplayFormatter.vnd(refund)
+                                    : "Đã hủy đặt chỗ, không phát sinh khoản hoàn.");
+                            setupBookings();
+                            refreshBadge();
+                          });
+                    } catch (Exception error) {
+                      runOnUiThread(
+                          () -> toast("Không thể hủy booking: " + error.getMessage()));
+                    }
                   });
             })
         .show();
@@ -730,7 +775,7 @@ public class MainActivity extends AppCompatActivity {
           executor.execute(
               () -> {
                 try {
-                  repository.submitReview(b.getId(), b.getUserId(), stars, text(comment));
+                  repository.submitReview(b.getId(), session.getUserId(), stars, text(comment));
                   runOnUiThread(
                       () -> {
                         toast("Đã lưu đánh giá của bạn");
@@ -811,8 +856,12 @@ public class MainActivity extends AppCompatActivity {
         return "Chờ xác nhận";
       case "confirmed":
         return "Đã xác nhận";
+      case "checked_in":
+        return "Đang lưu trú";
       case "cancelled":
         return "Đã hủy";
+      case "expired":
+        return "Hết hạn";
       case "completed":
         return "Hoàn thành";
       default:
@@ -826,10 +875,14 @@ public class MainActivity extends AppCompatActivity {
         return Color.parseColor("#F59E0B");
       case "confirmed":
         return Color.parseColor("#16A34A");
+      case "checked_in":
+        return Color.parseColor("#0B4AA2");
       case "cancelled":
         return Color.parseColor("#DC2626");
       case "completed":
         return Color.parseColor("#2563EB");
+      case "expired":
+        return Color.parseColor("#64748B");
       default:
         return Color.GRAY;
     }

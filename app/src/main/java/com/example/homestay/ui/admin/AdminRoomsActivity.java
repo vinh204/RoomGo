@@ -130,7 +130,7 @@ public class AdminRoomsActivity extends AppCompatActivity {
     for (Booking b : bookings)
       if (b.getRoomId() == r.getId()) {
         count++;
-        if ("completed".equals(b.getStatus())) revenue += b.getTotalPrice();
+        if ("PAID".equals(b.getPaymentStatus())) revenue += b.getTotalPrice();
       }
     return new AdminRoomData(
         String.valueOf(r.getId()),
@@ -253,7 +253,6 @@ public class AdminRoomsActivity extends AppCompatActivity {
         .execute(
             () -> {
               try {
-                if (f.featured.isChecked()) repository.clearFeaturedRooms();
                 long roomId;
                 if (existing == null) {
                   roomId =
@@ -279,6 +278,12 @@ public class AdminRoomsActivity extends AppCompatActivity {
                 } else {
                   roomId = Long.parseLong(existing.getId());
                   Room current = repository.getRoomById(Long.parseLong(existing.getId()));
+                  int requiredQuantity = repository.requiredRoomQuantity(roomId);
+                  if (slots < requiredQuantity)
+                    throw new IllegalArgumentException(
+                        "Số lượng phòng không thể nhỏ hơn "
+                            + requiredQuantity
+                            + " vì đang có booking trùng lịch");
                   if (current != null)
                     repository.updateRoom(
                         current.updated(
