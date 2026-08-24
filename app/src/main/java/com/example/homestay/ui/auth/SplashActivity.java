@@ -1,9 +1,11 @@
-package com.example.homestay;
+package com.example.homestay.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
+import com.example.homestay.ui.admin.AdminDashboardActivity;
+import com.example.homestay.ui.customer.MainActivity;
 
 public class SplashActivity extends AppCompatActivity {
   @Override

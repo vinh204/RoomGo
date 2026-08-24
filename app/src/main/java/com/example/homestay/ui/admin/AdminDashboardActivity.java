@@ -1,4 +1,4 @@
-package com.example.homestay;
+package com.example.homestay.ui.admin;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,8 +9,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
+import com.example.homestay.HomestayApplication;
+import com.example.homestay.R;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.repository.HomestayRepository;
+import com.example.homestay.ui.auth.LoginActivity;
+import com.example.homestay.ui.customer.MainActivity;
 import com.example.homestay.utils.*;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;

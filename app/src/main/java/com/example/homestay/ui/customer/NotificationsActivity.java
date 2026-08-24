@@ -1,10 +1,12 @@
-package com.example.homestay;
+package com.example.homestay.ui.customer;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.*;
+import com.example.homestay.HomestayApplication;
+import com.example.homestay.R;
 import com.example.homestay.data.entity.AppNotification;
 import com.example.homestay.data.repository.HomestayRepository;
 import com.example.homestay.ui.adapter.NotificationAdapter;

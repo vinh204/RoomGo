@@ -1,4 +1,4 @@
-package com.example.homestay.ui.viewmodel;
+package com.example.homestay.ui.auth;
 
 import android.content.Context;
 import androidx.annotation.NonNull;

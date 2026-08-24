@@ -11,6 +11,10 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.example.homestay.*;
+import com.example.homestay.ui.admin.AdminBookingsActivity;
+import com.example.homestay.ui.admin.AdminDashboardActivity;
+import com.example.homestay.ui.admin.AdminRoomsActivity;
+import com.example.homestay.ui.admin.AdminUsersActivity;
 
 public final class AdminNavigationUtils {
   private AdminNavigationUtils() {}

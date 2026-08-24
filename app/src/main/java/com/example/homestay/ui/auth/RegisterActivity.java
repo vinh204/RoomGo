@@ -1,4 +1,4 @@
-package com.example.homestay;
+package com.example.homestay.ui.auth;
 
 import android.os.Bundle;
 import android.widget.TextView;
@@ -9,7 +9,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
-import com.example.homestay.ui.viewmodel.AuthViewModel;
+import com.example.homestay.HomestayApplication;
+import com.example.homestay.R;
 import com.example.homestay.utils.InputValidator;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;

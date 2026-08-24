@@ -117,10 +117,6 @@ public class HomestayRepository {
     return bookings.getBookingById(id);
   }
 
-  public long insertBooking(Booking b) {
-    return bookings.insertBooking(b);
-  }
-
   public void updateBooking(Booking b) {
     bookings.updateBooking(b);
   }
@@ -204,16 +200,8 @@ public class HomestayRepository {
     return bookings.countByUserId(id) > 0;
   }
 
-  public List<AppNotification> getNotificationsNow(long id) {
-    return notifications.getByUserNow(id);
-  }
-
   public List<AppNotification> getCustomerNotificationsNow(long id) {
     return notifications.getCustomerByUserNow(id);
-  }
-
-  public List<AppNotification> getAdminNotificationsNow(long id) {
-    return notifications.getAdminByUserNow(id);
   }
 
   public long insertNotification(AppNotification n) {
@@ -222,10 +210,6 @@ public class HomestayRepository {
 
   public void markNotificationRead(long id) {
     notifications.markRead(id);
-  }
-
-  public void markAllNotificationsRead(long id) {
-    notifications.markAllRead(id);
   }
 
   public void markAllCustomerNotificationsRead(long id) {

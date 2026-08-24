@@ -1,4 +1,4 @@
-package com.example.homestay;
+package com.example.homestay.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,8 +10,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
+import com.example.homestay.HomestayApplication;
+import com.example.homestay.R;
 import com.example.homestay.data.entity.User;
-import com.example.homestay.ui.viewmodel.AuthViewModel;
+import com.example.homestay.ui.admin.AdminDashboardActivity;
+import com.example.homestay.ui.customer.MainActivity;
 import com.example.homestay.utils.AdminAuth;
 import com.example.homestay.utils.AppExecutors;
 import com.example.homestay.utils.SessionManager;

@@ -9,7 +9,6 @@
     <string name="admin_revenue">Doanh thu</string>
     <string name="admin_revenue_actual">Đã thu</string>
     <string name="admin_revenue_expected">Tổng giá trị booking</string>
-    <string name="admin_occupancy">Tỷ lệ lấp đầy</string>
     <string name="admin_recent_bookings">Đặt chỗ gần đây</string>
     <string name="admin_account">Tài khoản quản trị</string>
     <string name="user_avatar">Ảnh đại diện người dùng</string>

@@ -6,9 +6,6 @@ import java.util.List;
 
 @Dao
 public interface NotificationDao {
-  @Query("SELECT * FROM notifications WHERE userId=:id ORDER BY createdAt DESC")
-  List<AppNotification> getByUserNow(long id);
-
   @Query("SELECT * FROM notifications WHERE userId=:id AND type NOT LIKE 'admin_%' ORDER BY createdAt DESC")
   List<AppNotification> getCustomerByUserNow(long id);
 
@@ -20,9 +17,6 @@ public interface NotificationDao {
 
   @Query("UPDATE notifications SET isRead=1 WHERE id=:id")
   void markRead(long id);
-
-  @Query("UPDATE notifications SET isRead=1 WHERE userId=:id")
-  void markAllRead(long id);
 
   @Query("UPDATE notifications SET isRead=1 WHERE userId=:id AND type NOT LIKE 'admin_%'")
   void markAllCustomerRead(long id);

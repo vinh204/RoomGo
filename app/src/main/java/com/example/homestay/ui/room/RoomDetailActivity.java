@@ -1,4 +1,4 @@
-package com.example.homestay.ui;
+package com.example.homestay.ui.room;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
@@ -16,6 +16,8 @@ import androidx.core.view.*;
 import androidx.recyclerview.widget.*;
 import androidx.viewpager2.widget.ViewPager2;
 import com.example.homestay.*;
+import com.example.homestay.ui.auth.LoginActivity;
+import com.example.homestay.ui.customer.MainActivity;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.model.CreateBookingRequest;
 import com.example.homestay.data.repository.*;
@@ -24,7 +26,6 @@ import com.example.homestay.domain.BookingRules;
 import com.example.homestay.ui.adapter.*;
 import com.example.homestay.utils.DisplayFormatter;
 import com.example.homestay.utils.BookingTimeUtils;
-import com.example.homestay.utils.ImageLoader;
 import com.example.homestay.utils.SessionManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;

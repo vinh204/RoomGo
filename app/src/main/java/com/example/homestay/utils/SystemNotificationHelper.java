@@ -12,8 +12,8 @@ import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
-import com.example.homestay.NotificationsActivity;
-import com.example.homestay.AdminNotificationsActivity;
+import com.example.homestay.ui.customer.NotificationsActivity;
+import com.example.homestay.ui.admin.AdminNotificationsActivity;
 import com.example.homestay.R;
 import com.example.homestay.data.entity.AppNotification;
 import java.util.List;
@@ -71,8 +71,12 @@ public final class SystemNotificationHelper {
               .setOnlyAlertOnce(true)
               .setPriority(NotificationCompat.PRIORITY_DEFAULT)
               .setCategory(NotificationCompat.CATEGORY_STATUS);
-      manager.notify(value.getEventKey().hashCode(), builder.build());
-      editor.putBoolean(key, true);
+      try {
+        manager.notify(value.getEventKey().hashCode(), builder.build());
+        editor.putBoolean(key, true);
+      } catch (SecurityException ignored) {
+        // Người dùng có thể thu hồi quyền thông báo ngay sau bước kiểm tra.
+      }
     }
     editor.apply();
   }

@@ -1,4 +1,4 @@
-package com.example.homestay;
+package com.example.homestay.ui.admin;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -13,10 +13,11 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.*;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.*;
+import com.example.homestay.HomestayApplication;
+import com.example.homestay.R;
 import com.example.homestay.data.entity.*;
 import com.example.homestay.data.model.AdminRoomData;
 import com.example.homestay.data.repository.HomestayRepository;
-import com.example.homestay.ui.admin.AdminRoomAdapter;
 import com.example.homestay.utils.*;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -377,19 +378,6 @@ public class AdminRoomsActivity extends AppCompatActivity {
         .setNegativeButton("Đóng", null)
         .setPositiveButton("Chỉnh sửa", (d, w) -> showEdit(r))
         .show();
-  }
-
-  private boolean validImage(String value) {
-    if (value.trim().isEmpty()) return true;
-    try {
-      Uri u = Uri.parse(value);
-      if ("content".equals(u.getScheme())) return true;
-      if (!"https".equals(u.getScheme()) || u.getHost() == null) return false;
-      String p = u.getPath() == null ? "" : u.getPath().toLowerCase(Locale.ROOT);
-      return !p.endsWith(".html") && !p.endsWith(".htm");
-    } catch (Exception e) {
-      return false;
-    }
   }
 
   private void loadImage(ImageView v, String data) {
