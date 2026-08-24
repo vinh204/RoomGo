@@ -42,6 +42,44 @@ RoomGo là ứng dụng Android viết bằng **Java**, mô phỏng quy trình t
 | Android SDK | compileSdk/targetSdk 36, minSdk 24 |
 | Tác vụ nền | AndroidX WorkManager |
 
+## Cơ chế an toàn và toàn vẹn dữ liệu
+
+### Tài khoản và đăng nhập
+
+- Mật khẩu không lưu dạng văn bản thuần. Ứng dụng băm mật khẩu bằng **BCrypt** với work factor 12 trước khi ghi vào SQLite.
+- Mật khẩu mới phải dài tối thiểu 8 ký tự và có chữ hoa, chữ thường, chữ số cùng ký tự đặc biệt.
+- Email, số điện thoại và họ tên được kiểm tra định dạng; số điện thoại được chuẩn hóa trước khi lưu.
+- Sau 5 lần đăng nhập sai liên tiếp, tài khoản bị khóa tạm thời 15 phút. Đăng nhập thành công sẽ xóa bộ đếm thất bại.
+- Quản trị viên có thể khóa hoặc mở khóa tài khoản khách. Trạng thái khóa được lưu trong bảng `users` và được kiểm tra lại khi người dùng đang sử dụng ứng dụng.
+- Vai trò `ADMIN` và `CUSTOMER` được lưu riêng; email quản trị hệ thống không thể bị chuyển thành tài khoản khách thông qua luồng chỉnh sửa thông thường.
+- Khi đăng xuất, dữ liệu phiên khách và phiên quản trị trong `SharedPreferences` được xóa.
+
+### Đặt phòng và thanh toán
+
+- Giá booking được tính lại từ dữ liệu phòng/slot trong repository, không tin trực tiếp giá trị hiển thị từ giao diện.
+- Ngày nhận phòng phải được đặt trước ít nhất 1 giờ; ngày trả phải sau ngày nhận; số khách không được vượt sức chứa.
+- Kiểm tra số phòng còn trống và ghi booking được thực hiện trong cùng một `@Transaction`, hạn chế tạo booking vượt quá `maxSlots` khi nhiều thao tác xảy ra gần nhau.
+- Booking chờ duyệt giữ phòng tối đa 2 giờ rồi chuyển sang `expired`, giải phóng số lượng phòng.
+- `BookingStatusPolicy` chỉ cho phép các bước chuyển trạng thái hợp lệ; booking đang lưu trú chỉ có thể đi đến hoàn thành.
+- Chính sách hủy được dùng chung cho khách và quản trị: hoàn 100% trước giờ nhận ít nhất 24 giờ, 50% trong vòng 24 giờ và 0% sau giờ nhận.
+- Trạng thái booking và trạng thái thanh toán được lưu riêng (`status`, `paymentStatus`) để booking hoàn thành không tự động đồng nghĩa với đã thu tiền.
+- Booking là dữ liệu lịch sử và không bị xóa cứng trong luồng quản trị thông thường.
+
+### SQLite, thông báo và quyền hệ thống
+
+- Email, số điện thoại và khóa sự kiện thông báo có unique index để hạn chế dữ liệu trùng.
+- Room Database sử dụng migration từ các phiên bản cũ đến phiên bản 18; dự án không dùng `fallbackToDestructiveMigration`, tránh âm thầm xóa dữ liệu khi nâng schema.
+- Tác vụ WorkManager và các câu lệnh cập nhật có điều kiện được thiết kế để chạy lặp lại mà không chuyển sai trạng thái booking.
+- Thông báo khách và quản trị được phân biệt theo loại sự kiện và tài khoản nhận.
+- Trên Android 13 trở lên, ứng dụng chỉ gửi thông báo hệ thống sau khi người dùng cấp quyền `POST_NOTIFICATIONS`.
+
+### Giới hạn của bản cục bộ
+
+- Database SQLite hiện chưa được mã hóa bằng SQLCipher.
+- Session và bộ đếm đăng nhập được lưu bằng `SharedPreferences` thường, chưa dùng `EncryptedSharedPreferences`.
+- Xác thực và phân quyền chạy trên thiết bị, chưa có backend làm nguồn dữ liệu tin cậy. Thiết bị đã root hoặc bản APK bị chỉnh sửa vẫn có thể can thiệp dữ liệu cục bộ.
+- Tài khoản demo không nên được sử dụng cho dữ liệu thật. Khi triển khai thực tế cần backend, token có thời hạn, HTTPS, quản lý secret và kiểm tra quyền ở phía máy chủ.
+
 ## Yêu cầu môi trường
 
 - Android Studio phiên bản mới, có hỗ trợ Android SDK 36.
