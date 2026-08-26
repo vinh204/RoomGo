@@ -1,424 +1,404 @@
-# NỘI DUNG THUYẾT TRÌNH CHI TIẾT DỰ ÁN ROOMGO
+# THUYẾT TRÌNH DỰ ÁN ROOMGO - TẬP TRUNG CHỨC NĂNG CHÍNH
 
-> Quy mô: 15 slide, thời lượng đề xuất 12-15 phút. Phần **Nội dung trên slide** dùng để đưa vào PowerPoint; phần **Lời thuyết trình** dùng làm ghi chú cho người trình bày.
+> Bộ nội dung gồm 15 slide, phù hợp thuyết trình trong 12-15 phút. Phần **Nội dung trên slide** dùng cho PowerPoint; phần **Lời thuyết trình** dùng làm ghi chú.
 
 ---
 
-## Slide 1 - Giới thiệu đề tài
+## Slide 1 - Giới thiệu RoomGo
 
 ### Nội dung trên slide
 
-**ROOMGO - Ứng dụng tìm kiếm và đặt phòng homestay trên Android**
+**ROOMGO - Ứng dụng tìm kiếm và đặt phòng homestay**
 
-- Nền tảng: Android 7.0 trở lên.
-- Ngôn ngữ: Java; giao diện XML.
-- Cơ sở dữ liệu: Room Database trên SQLite.
-- Hai nhóm người dùng: khách hàng và quản trị viên.
-- Mô hình hiện tại: ứng dụng demo lưu dữ liệu cục bộ.
+- Ứng dụng Android viết bằng Java.
+- Hỗ trợ khách hàng và quản trị viên.
+- Quản lý từ lúc tìm phòng đến khi hoàn thành lưu trú.
+- Dữ liệu demo được lưu cục bộ bằng Room/SQLite.
 
 ### Lời thuyết trình
 
-RoomGo là ứng dụng Android mô phỏng trọn vẹn quy trình tìm kiếm, đặt và quản lý phòng homestay. Khách hàng có thể tìm phòng, chọn ngày, đặt chỗ, theo dõi trạng thái và đánh giá. Quản trị viên quản lý phòng, booking, tài khoản và doanh thu. Phiên bản hiện tại tập trung vào nghiệp vụ và lưu dữ liệu cục bộ bằng Room/SQLite.
+RoomGo là ứng dụng mô phỏng toàn bộ quy trình đặt homestay trên Android. Khách hàng có thể tìm kiếm, xem chi tiết, đặt và theo dõi phòng. Quản trị viên có thể quản lý phòng, booking, người dùng và doanh thu.
 
 ### Hình minh họa
 
-Logo RoomGo, màn hình Splash và màn hình đăng nhập.
+Logo RoomGo, màn hình Splash hoặc đăng nhập.
 
 ---
 
-## Slide 2 - Bài toán, lý do chọn đề tài và mục tiêu
-
-### Nội dung trên slide
-
-**Bài toán**
-
-- Khách khó biết chính xác phòng còn trống theo từng khoảng ngày.
-- Quản lý thủ công dễ trùng lịch, sai giá và khó theo dõi trạng thái.
-- Dữ liệu phòng, khách, booking và doanh thu bị phân tán.
-
-**Mục tiêu**
-
-- Số hóa quy trình tìm và đặt homestay.
-- Quản lý thống nhất vòng đời booking.
-- Kiểm tra sức chứa, số phòng trống, giá và hoàn tiền.
-- Tạo trải nghiệm riêng cho khách hàng và quản trị viên.
-
-### Lời thuyết trình
-
-Điểm chính của bài toán không chỉ là hiển thị danh sách phòng mà còn phải bảo đảm một booking hợp lệ: đúng ngày, đủ sức chứa, còn phòng, đúng giá và chuyển trạng thái đúng quy tắc. RoomGo giải quyết cả trải nghiệm khách hàng lẫn công việc quản trị trong một ứng dụng.
-
----
-
-## Slide 3 - Phạm vi chức năng và các tác nhân
+## Slide 2 - Người dùng và nhóm chức năng
 
 ### Nội dung trên slide
 
 | Khách hàng | Quản trị viên |
 |---|---|
 | Đăng ký, đăng nhập | Xem dashboard |
-| Tìm, lọc, xem phòng | Quản lý phòng và ảnh |
-| Lưu phòng yêu thích | Duyệt và xử lý booking |
-| Đặt hoặc hủy phòng | Quản lý người dùng |
+| Tìm kiếm và lọc phòng | Quản lý phòng |
+| Xem chi tiết, yêu thích | Xử lý booking |
+| Đặt và hủy phòng | Quản lý người dùng |
 | Theo dõi trạng thái | Theo dõi doanh thu |
-| Nhận thông báo | Nhận thông báo quản trị |
-| Đánh giá sau lưu trú | Xem giao diện khách |
-
-**Ngoài phạm vi hiện tại:** backend, đồng bộ đa thiết bị, cổng thanh toán thật và bản đồ trực tuyến.
+| Nhận thông báo, đánh giá | Nhận thông báo quản trị |
 
 ### Lời thuyết trình
 
-Hệ thống có hai vai trò được lưu riêng là `CUSTOMER` và `ADMIN`. Khách hàng tập trung vào quá trình đặt phòng; admin tập trung vào vận hành. Vì đây là bản demo cục bộ nên các tính năng cần hạ tầng bên ngoài như thanh toán thật và đồng bộ nhiều thiết bị chưa được triển khai.
+Hệ thống phân biệt hai vai trò là `CUSTOMER` và `ADMIN`. Mỗi vai trò có giao diện và quyền thao tác riêng. Admin còn có thể chuyển sang giao diện khách để kiểm tra trải nghiệm sử dụng.
 
 ---
 
-## Slide 4 - Công nghệ sử dụng
+## Slide 3 - Đăng ký, đăng nhập và quản lý tài khoản
 
 ### Nội dung trên slide
 
-| Thành phần | Công nghệ và vai trò |
-|---|---|
-| Java 11 | Xử lý giao diện và nghiệp vụ |
-| XML, Material Components | Thiết kế màn hình và dialog |
-| Room 2.6.1 / SQLite | Lưu trữ dữ liệu cục bộ |
-| RecyclerView | Hiển thị danh sách hiệu quả |
-| Adapter, ViewHolder | Gắn dữ liệu vào từng phần tử |
-| ViewPager2 | Trình chiếu nhiều ảnh phòng |
-| WorkManager | Cập nhật booking định kỳ |
-| BCrypt | Băm mật khẩu |
-| Gradle 8.13, AGP 8.13.1 | Biên dịch và đóng gói |
-| minSdk 24, targetSdk 36 | Phạm vi Android hỗ trợ |
+- Đăng ký bằng họ tên, email, số điện thoại và mật khẩu.
+- Kiểm tra định dạng và không cho trùng email, số điện thoại.
+- Mật khẩu phải có ít nhất 8 ký tự và đủ độ mạnh.
+- Mật khẩu được băm bằng BCrypt trước khi lưu.
+- Khóa đăng nhập 15 phút sau 5 lần nhập sai.
+- Khách có thể sửa hồ sơ, đổi mật khẩu và đăng xuất.
+- Admin có thể khóa hoặc mở khóa tài khoản khách.
 
 ### Lời thuyết trình
 
-RecyclerView tái sử dụng ViewHolder khi cuộn, giúp danh sách phòng và booking hoạt động hiệu quả. Adapter là cầu nối giữa dữ liệu và giao diện từng dòng. WorkManager đảm nhiệm công việc nền. BCrypt được dùng để không lưu mật khẩu dạng văn bản thuần.
-
----
-
-## Slide 5 - Kiến trúc và luồng dữ liệu
-
-### Nội dung trên slide
-
-```text
-Activity / Dialog / RecyclerView
-              ↓
-         Adapter, Model
-              ↓
-           Repository
-        ↙             ↘
- Domain Rules         DAO
-                        ↓
-              Room Database
-                        ↓
-                     SQLite
-```
-
-- 72 tệp Java, 35 layout XML.
-- Nhóm mã chính: `ui`, `data`, `domain`, `utils`, `worker`.
-- Intent chuyển màn hình và truyền ID phòng/booking.
-- Executor chạy truy vấn ngoài UI thread.
-
-### Lời thuyết trình
-
-Activity tiếp nhận thao tác người dùng nhưng không trực tiếp viết SQL. Repository điều phối nghiệp vụ và gọi DAO. Domain chứa các quy tắc thuần Java như tính tiền, tìm kiếm, trạng thái và hoàn tiền. DAO là Data Access Object, chịu trách nhiệm truy cập dữ liệu. Cách chia này giảm phụ thuộc và giúp nghiệp vụ dễ kiểm thử.
+Khi đăng nhập thành công, SessionManager lưu phiên người dùng và điều hướng theo vai trò. Nếu tài khoản bị admin khóa, ứng dụng kiểm tra lại trạng thái trong quá trình sử dụng. Khi đăng xuất, dữ liệu phiên được xóa để không thể quay lại màn hình đã đăng nhập.
 
 ### Hình minh họa
 
-Vẽ lại sơ đồ trên bằng các khối và mũi tên.
+Màn hình đăng ký, đăng nhập và tài khoản.
 
 ---
 
-## Slide 6 - Room Database hoạt động như thế nào?
+## Slide 4 - Trang chủ và tìm kiếm phòng
 
 ### Nội dung trên slide
 
-```text
-Entity mô tả bảng
-       ↓
-DAO khai báo truy vấn
-       ↓
-HomestayDatabase cấu hình Room
-       ↓
-Room sinh mã triển khai
-       ↓
-SQLite lưu dữ liệu thực tế
-```
+- Hiển thị lời chào, phòng nổi bật và danh sách phòng.
+- Tìm theo tên phòng, vị trí hoặc địa chỉ.
+- Tìm kiếm không phân biệt chữ hoa và chữ thường.
+- Lọc theo ngày nhận, ngày trả và số khách.
+- Sắp xếp theo giá thấp, giá cao hoặc đánh giá.
+- Chỉ hiển thị phòng đang mở, đủ sức chứa và còn chỗ.
 
-- `@Entity`: ánh xạ lớp Java thành bảng.
-- `@Dao`: khai báo `@Query`, `@Insert`, `@Update`, `@Delete`.
-- `@Database`: khai báo Entity, DAO và phiên bản schema.
-- `@Transaction`: nhóm nhiều thao tác thành một giao dịch.
-- Migration nâng schema mà không xóa dữ liệu cũ.
-- Singleton giúp toàn ứng dụng dùng chung một database.
-
-### Lời thuyết trình
-
-Room không thay thế SQLite mà là lớp trung gian chính thức của Android Jetpack. SQLite vẫn lưu dữ liệu thực tế; Room kiểm tra truy vấn khi biên dịch, ánh xạ kết quả SQL thành đối tượng Java và sinh phần mã lặp lại. Vì RoomGo hoạt động ngoại tuyến và dữ liệu demo không quá lớn, Room/SQLite là lựa chọn phù hợp.
-
----
-
-## Slide 7 - Thiết kế cơ sở dữ liệu
-
-### Nội dung trên slide
-
-RoomGo dùng database `homestay_database`, phiên bản 18, gồm 8 bảng:
-
-| Bảng | Dữ liệu chính |
-|---|---|
-| `users` | Tài khoản, vai trò, trạng thái khóa |
-| `rooms` | Tên, vị trí, giá, sức chứa, `maxSlots` |
-| `room_images` | Nhiều ảnh của từng phòng |
-| `slots` | Lựa chọn phòng và giá riêng |
-| `bookings` | Ngày ở, khách, giá, trạng thái |
-| `favorites` | Phòng yêu thích theo người dùng |
-| `reviews` | Điểm và nhận xét sau lưu trú |
-| `notifications` | Thông báo khách và admin |
-
-**Quan hệ:** User tạo nhiều Booking; Room có nhiều Booking, ảnh, slot và đánh giá; Booking có tối đa một Review.
-
-### Lời thuyết trình
-
-`maxSlots` biểu diễn tổng số phòng cùng loại có thể bán. Số còn trống không lưu cố định mà được tính bằng `maxSlots` trừ số booking đang giữ chỗ và trùng ngày. Database có index cho các khóa tra cứu, unique index để hạn chế dữ liệu trùng và migration từ các phiên bản cũ.
-
-### Hình minh họa
-
-Sử dụng sơ đồ ER trong README.
-
----
-
-## Slide 8 - Giao diện và chức năng khách hàng
-
-### Nội dung trên slide
-
-- **Xác thực:** đăng ký, đăng nhập, sửa hồ sơ, đổi mật khẩu.
-- **Trang chủ:** tìm kiếm, lọc ngày, số khách và sắp xếp.
-- **Chi tiết phòng:** ảnh, giá, tiện nghi, mô tả và đánh giá.
-- **Yêu thích:** lưu hoặc bỏ lưu phòng.
-- **Đặt chỗ:** chọn ngày, số khách, slot và phương thức thanh toán.
-- **Booking:** xem trạng thái, chi tiết, hủy và tiền hoàn.
-- **Thông báo:** trong ứng dụng và notification Android.
-- **Đánh giá:** chỉ sau khi booking hoàn thành.
-
-### Lời thuyết trình
-
-Các danh sách dùng RecyclerView và Adapter. `RoomAdapter` hiển thị phòng, `BookingAdapter` hiển thị booking, `ReviewAdapter` hiển thị đánh giá và `NotificationAdapter` hiển thị thông báo. ViewPager2 cùng `RoomImagePagerAdapter` cho phép vuốt qua nhiều ảnh phòng.
-
-### Hình minh họa
-
-Trang chủ, chi tiết phòng, yêu thích và danh sách đặt chỗ.
-
----
-
-## Slide 9 - Tìm kiếm và kiểm tra phòng trống
-
-### Nội dung trên slide
+### Luồng xử lý
 
 ```text
 Nhập từ khóa / chọn bộ lọc
             ↓
-TextWatcher gọi reload
+Đọc danh sách phòng và booking
             ↓
-Repository đọc Room + Booking
+RoomSearchEngine lọc kết quả
             ↓
-RoomSearchEngine.filter()
-            ↓
-RoomAdapter.submitList()
+RoomAdapter cập nhật RecyclerView
 ```
-
-- Tìm không phân biệt hoa thường.
-- So khớp chuỗi con trong tên, vị trí và địa chỉ.
-- Loại phòng đang ẩn hoặc không đủ sức chứa.
-- Nếu đã chọn ngày, loại phòng đã hết `maxSlots`.
-- Sắp xếp theo giá tăng, giá giảm hoặc đánh giá.
 
 ### Lời thuyết trình
 
-Phiên bản hiện tại lấy danh sách phòng và booking từ Room, sau đó lọc trong bộ nhớ Java bằng `RoomSearchEngine`. Booking `pending`, `confirmed` và `checked_in` được tính là chiếm chỗ nếu khoảng ngày giao nhau. Dữ liệu demo nhỏ nên cách này đơn giản; dữ liệu lớn nên dùng truy vấn DAO, phân trang và debounce.
+Khi người dùng nhập từ khóa, TextWatcher gọi lại chức năng tìm kiếm. RoomSearchEngine ghép tên, vị trí và địa chỉ rồi kiểm tra chuỗi con. Nếu người dùng đã chọn ngày, hệ thống còn loại những phòng đã hết số lượng trong khoảng thời gian đó.
+
+### Hình minh họa
+
+Trang chủ có ô tìm kiếm, bộ lọc và danh sách kết quả.
 
 ---
 
-## Slide 10 - Luồng đặt một phòng
+## Slide 5 - Xem chi tiết phòng
 
 ### Nội dung trên slide
 
-```text
-Nhấn “Đặt ngay”
-       ↓
-Kiểm tra đăng nhập và tài khoản
-       ↓
-Chọn ngày, số khách, slot
-       ↓
-BookingRules kiểm tra điều kiện
-       ↓
-BookingCalculator tính tổng tiền
-       ↓
-Xác nhận thanh toán tại chỗ
-       ↓
-BookingRepository kiểm tra lại
-       ↓
-BookingDao ghi trong Transaction
-```
-
-**Quy tắc:** đặt trước ít nhất 1 giờ; ngày trả sau ngày nhận; không vượt sức chứa; còn phòng trong khoảng ngày; check-in 14:00, check-out 12:00.
+- Trình chiếu nhiều ảnh bằng ViewPager2.
+- Hiển thị tên, địa chỉ, vị trí và mô tả.
+- Hiển thị giá mỗi đêm và số phòng còn lại.
+- Hiển thị sức chứa và các tiện nghi.
+- Hiển thị điểm trung bình và đánh giá của khách trước.
+- Cho phép lưu phòng yêu thích hoặc bắt đầu đặt phòng.
 
 ### Lời thuyết trình
 
-Giao diện kiểm tra sớm để phản hồi cho người dùng, nhưng Repository vẫn kiểm tra lại phòng, ngày, slot và giá. Giá được tính lại từ Room hoặc Slot thay vì tin trực tiếp giá gửi từ giao diện. Booking chỉ được lưu nếu DAO kiểm tra lần cuối rằng vẫn còn chỗ.
+Màn hình chi tiết nhận `room_id` thông qua Intent, sau đó lấy dữ liệu phòng, ảnh, slot và đánh giá từ Repository. Các ảnh được hiển thị bằng RoomImagePagerAdapter. Đây là màn hình giúp khách ra quyết định trước khi đặt.
+
+### Hình minh họa
+
+Ảnh màn hình chi tiết phòng, bộ ảnh và phần đánh giá.
 
 ---
 
-## Slide 11 - Tạo booking, thanh toán và cạnh tranh slot
+## Slide 6 - Phòng yêu thích
 
 ### Nội dung trên slide
 
-Booking mới được lưu với:
+- Khách nhấn biểu tượng trái tim để lưu phòng.
+- Mỗi quan hệ yêu thích gắn với một người dùng và một phòng.
+- Có thể bỏ lưu ngay tại danh sách hoặc màn hình chi tiết.
+- Tab “Đã lưu” hiển thị toàn bộ phòng yêu thích.
+- Trạng thái yêu thích được đồng bộ khi tải lại danh sách.
+- Người chưa đăng nhập được yêu cầu đăng nhập trước khi lưu.
 
-- `status = pending`.
-- `paymentMethod = pay_on_site`.
-- `paymentStatus = UNPAID`.
-- `expiresAt = createdAt + 2 giờ`.
+### Lời thuyết trình
+
+Chức năng yêu thích dùng bảng `favorites`. Cặp `userId-roomId` giúp xác định đúng phòng của từng người dùng và tránh lưu trùng. Danh sách được hiển thị bằng RecyclerView và RoomAdapter giống Trang chủ.
+
+---
+
+## Slide 7 - Chọn ngày, số khách và loại phòng
+
+### Nội dung trên slide
+
+- Chọn ngày nhận và ngày trả bằng bộ chọn ngày.
+- Ngày nhận phải cách thời điểm đặt ít nhất một giờ.
+- Ngày trả phải sau ngày nhận.
+- Quy ước nhận phòng lúc 14:00, trả phòng lúc 12:00.
+- Số khách không được vượt sức chứa tối đa.
+- Có thể chọn slot hoặc loại phòng với mức giá riêng.
+- Tổng tiền cập nhật theo lựa chọn của khách.
+
+### Công thức
 
 ```text
-Còn 1 slot
+Số đêm = ngày trả - ngày nhận
+Giá mỗi đêm = giá slot nếu có, ngược lại dùng giá phòng
+Tổng tiền = số đêm × giá mỗi đêm
+```
+
+### Lời thuyết trình
+
+`BookingRules` kiểm tra ngày, số khách và sức chứa. `BookingCalculator` tính số đêm và tổng tiền. Việc tách hai lớp này khỏi Activity giúp quy tắc được dùng thống nhất và có thể kiểm thử độc lập.
+
+---
+
+## Slide 8 - Kiểm tra phòng trống và tạo booking
+
+### Nội dung trên slide
+
+- Đếm booking cùng phòng có khoảng ngày giao nhau.
+- Chỉ tính các trạng thái đang giữ chỗ:
+  - `pending`
+  - `confirmed`
+  - `checked_in`
+- Số còn trống = `maxSlots - occupied`.
+- Repository kiểm tra lại phòng, ngày, slot và giá.
+- Kiểm tra số lượng và ghi booking trong cùng `@Transaction`.
+
+### Luồng xử lý
+
+```text
+Kiểm tra dữ liệu ở giao diện
+             ↓
+Repository tính lại giá và quy tắc
+             ↓
+DAO đếm booking trùng ngày
+             ↓
+Còn phòng → ghi booking
+Hết phòng → trả thông báo lỗi
+```
+
+### Lời thuyết trình
+
+Hệ thống không chỉ tin kết quả hiển thị trên màn hình. Ngay trước khi lưu, Repository và DAO kiểm tra lại dữ liệu. Việc đếm và thêm booking trong cùng transaction giúp hạn chế tạo booking vượt quá `maxSlots`.
+
+---
+
+## Slide 9 - Thanh toán và xử lý hai người cùng đặt
+
+### Nội dung trên slide
+
+**Thanh toán hiện tại**
+
+- Hiển thị lại phòng, ngày, số khách và tổng tiền.
+- Phương thức: thanh toán khi đến nơi, `pay_on_site`.
+- Booking mới có `paymentStatus = UNPAID`.
+- Chưa tích hợp giao dịch tiền thật.
+
+**Khi chỉ còn một slot**
+
+```text
 A và B cùng mở thanh toán
         ↓
 Mở dialog chưa giữ phòng
         ↓
-Cả hai cùng xác nhận
-        ↓
-Transaction A ghi trước → thành công
-Transaction B đếm lại → hết phòng
+A xác nhận và ghi trước → thành công
+B được kiểm tra lại → báo hết phòng
 ```
 
 ### Lời thuyết trình
 
-Màn hình thanh toán hiện chỉ xác nhận “thanh toán khi đến nơi”, chưa chuyển tiền thật. Slot chỉ được giữ khi booking `pending` được ghi thành công. Trong cùng một SQLite database, `insertIfCapacityAvailable()` vừa đếm booking trùng ngày vừa thêm booking trong `@Transaction`; yêu cầu đến sau nhận lỗi hết phòng.
-
-**Giới hạn:** hai điện thoại có hai SQLite riêng nên chưa ngăn được đặt trùng giữa nhiều thiết bị. Sản phẩm thực tế cần API và database trung tâm.
+Slot chỉ được giữ khi booking được ghi thành công, không phải lúc mở màn hình thanh toán. Trong cùng một SQLite database, transaction bảo đảm yêu cầu ghi trước giữ chỗ và yêu cầu sau bị từ chối. Tuy nhiên, hai điện thoại dùng hai database riêng nên sản phẩm thực tế cần backend và database trung tâm.
 
 ---
 
-## Slide 12 - Vòng đời booking, hủy và hoàn tiền
+## Slide 10 - Theo dõi vòng đời booking
 
 ### Nội dung trên slide
 
 ```text
-pending ──Admin duyệt──> confirmed
-   │                         │
-   ├──quá 2 giờ──> expired  ├──đến giờ nhận──> checked_in
-   │                         │                     │
-   └──hủy──> cancelled       └──đến giờ trả──────> completed
+pending ──Admin xác nhận──> confirmed
+   │                           │
+   ├──quá 2 giờ──> expired    ├──đến giờ nhận──> checked_in
+   │                           │                     │
+   └──hủy──> cancelled         └──đến giờ trả──────> completed
 ```
 
-- Chỉ cho phép chuyển trạng thái hợp lệ.
-- Hủy trước check-in từ 24 giờ: hoàn 100%.
-- Hủy trong 24 giờ trước check-in: hoàn 50%.
-- Hủy sau check-in: hoàn 0%.
-- Booking và thanh toán có trạng thái độc lập.
-- Có hoàn tiền: `paymentStatus = REFUND_PENDING`.
+- Khách theo dõi booking trong tab “Đặt chỗ”.
+- Hiển thị mã, phòng, ngày, tổng tiền và trạng thái.
+- Booking chờ duyệt giữ phòng tối đa hai giờ.
+- Chỉ cho phép các bước chuyển trạng thái hợp lệ.
+- Booking lịch sử được giữ lại để tra cứu.
 
 ### Lời thuyết trình
 
-`BookingStatusPolicy` kiểm soát hướng chuyển trạng thái. `CancellationPolicy` được dùng chung cho khách và admin để kết quả hoàn tiền nhất quán. Dữ liệu booking được giữ làm lịch sử, không xóa cứng trong thao tác quản trị thông thường.
+`BookingStatusPolicy` ngăn các bước chuyển sai, ví dụ booking hoàn thành không thể quay về chờ duyệt. Trạng thái booking được tách khỏi trạng thái thanh toán vì hoàn thành kỳ lưu trú không đồng nghĩa với đã thu tiền.
+
+### Hình minh họa
+
+Danh sách booking và dialog chi tiết booking.
 
 ---
 
-## Slide 13 - Quản trị, tự động hóa và thông báo
+## Slide 11 - Hủy phòng và hoàn tiền
 
 ### Nội dung trên slide
 
-**Quản trị**
+- Chỉ booking `pending` hoặc `confirmed` mới được hủy trước check-in.
+- Khách nhập lý do hủy.
+- Hệ thống tự tính tiền hoàn:
 
-- Dashboard: phòng đang mở, người dùng, chờ duyệt và doanh thu.
-- Lọc theo hôm nay, 7 ngày hoặc tháng.
-- Quản lý phòng, nhiều ảnh và duy nhất một phòng nổi bật.
-- Duyệt, từ chối, hủy booking và xác nhận hoàn tiền.
-- Xem, sửa, đổi mật khẩu, khóa hoặc xóa tài khoản khách.
+| Thời điểm hủy | Tỷ lệ hoàn |
+|---|---:|
+| Trước check-in từ 24 giờ | 100% |
+| Trong vòng 24 giờ trước check-in | 50% |
+| Sau giờ check-in | 0% |
 
-**Tự động hóa**
+- Có tiền hoàn: chuyển sang `REFUND_PENDING`.
+- Admin xác nhận sau khi đã hoàn tiền.
+
+### Lời thuyết trình
+
+`CancellationPolicy` được dùng chung cho khách và quản trị viên nên cùng một booking luôn có kết quả hoàn tiền giống nhau. Lý do hủy, thời điểm hủy và số tiền hoàn đều được lưu trong booking để tra cứu.
+
+---
+
+## Slide 12 - Thông báo và tác vụ tự động
+
+### Nội dung trên slide
+
+**Thông báo cho khách**
+
+- Đã gửi yêu cầu đặt phòng.
+- Booking được xác nhận, bị hủy hoặc hết hạn.
+- Đến giờ nhận phòng.
+- Chuyến đi hoàn thành và mời đánh giá.
+
+**Thông báo cho admin**
+
+- Có tài khoản mới.
+- Có yêu cầu đặt phòng mới.
+- Khách hủy booking.
+- Khách bắt đầu hoặc hoàn thành lưu trú.
+
+**Tác vụ nền**
 
 - WorkManager chạy khi mở ứng dụng và định kỳ 15 phút.
-- `confirmed → checked_in` khi đến giờ nhận.
-- `checked_in → completed` khi đến giờ trả.
-- Đồng bộ và phát thông báo cho khách lẫn admin.
+- Tự động cập nhật `expired`, `checked_in`, `completed`.
 
 ### Lời thuyết trình
 
-Dashboard phân biệt doanh thu dự kiến với doanh thu thực thu dựa trên trạng thái thanh toán. Worker sử dụng các câu UPDATE có điều kiện nên có thể chạy lặp mà không chuyển sai trạng thái. Android 13 trở lên chỉ phát notification sau khi người dùng cấp quyền.
+Thông báo được lưu trong bảng `notifications`, có khóa sự kiện duy nhất để tránh tạo trùng. Người dùng có thể đánh dấu từng thông báo hoặc tất cả là đã đọc. SystemNotificationHelper đưa thông báo mới lên thanh trạng thái Android nếu đã được cấp quyền.
+
+### Hình minh họa
+
+Danh sách thông báo và notification trên Android.
 
 ---
 
-## Slide 14 - Bảo mật, kiểm thử và hạn chế
+## Slide 13 - Đánh giá sau lưu trú
 
 ### Nội dung trên slide
 
-**Bảo mật và toàn vẹn**
+- Chỉ booking `completed` mới được đánh giá.
+- Mỗi booking chỉ được gửi một đánh giá.
+- Khách chọn số sao và nhập nhận xét.
+- Đánh giá liên kết với người dùng, phòng và booking.
+- Điểm đánh giá được hiển thị ở danh sách và chi tiết phòng.
+- Đánh giá hỗ trợ khách sau đưa ra quyết định.
 
-- BCrypt work factor 12; không lưu mật khẩu thuần.
-- Kiểm tra email, số điện thoại và mật khẩu mạnh.
-- Khóa 15 phút sau 5 lần đăng nhập sai.
-- Phân quyền `ADMIN`/`CUSTOMER`.
-- Unique index, foreign key, transaction và migration.
+### Lời thuyết trình
 
-**Kiểm thử**
+Điều kiện booking hoàn thành giúp hạn chế đánh giá từ người chưa thực sự lưu trú. ReviewAdapter hiển thị danh sách đánh giá trên màn hình chi tiết. Đây cũng là dữ liệu được dùng khi sắp xếp phòng theo đánh giá tốt.
 
-- 20 unit test: tìm kiếm, tính giá, booking, trạng thái, hoàn tiền.
-- 3 instrumented test cho Room Database.
-- `testDebugUnitTest`: **BUILD SUCCESSFUL**.
+---
+
+## Slide 14 - Các chức năng quản trị
+
+### Nội dung trên slide
+
+**Dashboard**
+
+- Phòng đang mở, tổng người dùng, booking chờ duyệt.
+- Doanh thu dự kiến và doanh thu thực thu.
+- Thống kê hôm nay, 7 ngày hoặc tháng; so sánh kỳ trước.
+
+**Quản lý**
+
+- Phòng: thêm, sửa, ẩn, xóa, nhiều ảnh, phòng nổi bật.
+- Booking: tìm, lọc, xác nhận, từ chối, hủy, hoàn tiền.
+- Người dùng: xem, sửa, đổi mật khẩu, khóa hoặc xóa.
+- Thông báo: mở nhanh màn hình có sự kiện liên quan.
+
+### Lời thuyết trình
+
+Admin có bốn khu vực chính: tổng quan, phòng, đặt chỗ và người dùng. Chỉ một phòng được đánh dấu nổi bật tại một thời điểm. Booking đang lưu trú hoặc đã kết thúc không cho thay đổi thủ công tùy ý để bảo vệ lịch sử.
+
+### Hình minh họa
+
+Dashboard, quản lý phòng, booking và người dùng.
+
+---
+
+## Slide 15 - Kết quả, hạn chế và hướng phát triển
+
+### Nội dung trên slide
+
+**Kết quả**
+
+- Hoàn thành đầy đủ chức năng cho khách và admin.
+- Quản lý tìm kiếm, đặt phòng, trạng thái và hoàn tiền.
+- Có transaction, tác vụ nền, thông báo và đánh giá.
+- 20 unit test đã chạy thành công; có 3 database test.
 
 **Hạn chế**
 
-- SQLite và SharedPreferences chưa được mã hóa.
-- Chưa có backend, token, HTTPS và thanh toán thật.
-
-### Lời thuyết trình
-
-Các quy tắc nghiệp vụ được tách thành lớp Java thuần nên có thể kiểm thử nhanh mà không khởi chạy Android. Ba instrumented test cần emulator hoặc thiết bị. Bảo mật hiện phù hợp mức demo; thiết bị root hoặc APK bị chỉnh sửa vẫn có thể can thiệp dữ liệu cục bộ.
-
----
-
-## Slide 15 - Kết quả, hướng phát triển và kết luận
-
-### Nội dung trên slide
-
-**Kết quả đạt được**
-
-- Hoàn thành hai luồng khách hàng và quản trị.
-- Quản lý đầy đủ vòng đời booking.
-- Kiểm tra phòng trống theo khoảng ngày và transaction.
-- Có thông báo, tác vụ nền, migration và kiểm thử.
+- Dữ liệu chỉ nằm trên từng thiết bị.
+- Thanh toán mới là mô phỏng tại chỗ.
+- Chưa đồng bộ và chống đặt trùng giữa nhiều điện thoại.
 
 **Hướng phát triển**
 
-- Backend REST API và database trung tâm.
-- Cơ chế giữ slot 5-10 phút khi thanh toán.
-- VNPay/MoMo, bản đồ và lưu trữ ảnh trực tuyến.
-- Mã hóa dữ liệu, HTTPS và token có thời hạn.
-- MVVM, dependency injection, Paging và UI test.
-
-**Kết luận:** RoomGo không chỉ là giao diện đặt phòng mà là hệ thống quản lý booking có quy tắc, trạng thái và dữ liệu nhất quán.
+- Backend và database trung tâm.
+- Giữ slot tạm thời khi thanh toán.
+- VNPay/MoMo, bản đồ và lưu ảnh trực tuyến.
+- HTTPS, token và mã hóa dữ liệu.
 
 ### Lời thuyết trình
 
-Dự án đã đáp ứng mục tiêu của một ứng dụng Android demo hoàn chỉnh. Giá trị nổi bật nằm ở việc tách nghiệp vụ, kiểm tra lại dữ liệu trước khi ghi và quản lý vòng đời booking. Bước phát triển quan trọng nhất là chuyển quyền quyết định booking lên backend để hỗ trợ nhiều thiết bị và thanh toán thực tế.
+RoomGo đã hoàn thành mục tiêu của một ứng dụng Android demo có nghiệp vụ rõ ràng. Điểm nổi bật là kiểm tra phòng theo khoảng ngày, quản lý vòng đời booking và thông báo tự động. Bước phát triển quan trọng nhất là xây dựng backend để nhiều thiết bị sử dụng chung dữ liệu và tích hợp thanh toán thật.
 
 **Xin cảm ơn thầy cô và các bạn đã lắng nghe!**
 
 ---
 
-## Kịch bản demo đề xuất
+## Kịch bản demo chức năng
 
 1. Đăng nhập tài khoản khách.
-2. Tìm phòng theo vị trí, chọn ngày và số khách.
-3. Mở chi tiết, đặt phòng và xác nhận thanh toán tại chỗ.
-4. Mở tab Đặt chỗ để xem booking `pending`.
-5. Đăng nhập admin và xác nhận booking.
-6. Quay lại giao diện khách để xem trạng thái và thông báo.
+2. Tìm phòng theo địa điểm, chọn ngày và số khách.
+3. Mở chi tiết, lưu yêu thích và đặt phòng.
+4. Xác nhận thanh toán tại chỗ.
+5. Mở tab Đặt chỗ để xem trạng thái chờ duyệt.
+6. Đăng nhập admin và xác nhận booking.
+7. Quay lại tài khoản khách để xem trạng thái và thông báo.
 
 ## Phân bổ thời gian
 
-| Nhóm slide | Thời gian |
-|---|---:|
-| Slide 1-3: Bài toán và phạm vi | 2 phút |
-| Slide 4-7: Công nghệ, kiến trúc, dữ liệu | 4 phút |
-| Slide 8-13: Chức năng và nghiệp vụ | 6 phút |
-| Slide 14-15: Đánh giá và kết luận | 2-3 phút |
+| Nội dung | Slide | Thời gian |
+|---|---:|---:|
+| Giới thiệu và người dùng | 1-2 | 1,5 phút |
+| Chức năng khách hàng | 3-7 | 4,5 phút |
+| Đặt phòng và vòng đời | 8-11 | 4 phút |
+| Thông báo, đánh giá, admin | 12-14 | 3 phút |
+| Kết luận | 15 | 1 phút |
